@@ -7,13 +7,12 @@ from PIL import ImageFont
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
-# Create the main app window
 app = ctk.CTk()
 app.geometry("1080x720")
 app.title("AllIn")
 
 font_dir = os.path.join(os.path.dirname(__file__), "fonts")
-#font_dir = r"C:\Users\danie\OneDrive\Desktop\Documents\AllIn\static"
+#font_dir = r"C:\Users\danie\OneDrive\Desktop\Documents\AllIn\static" Folder where font is saved
 montserrat_regular_path = os.path.join(font_dir, "Montserrat-Regular.ttf")
 montserrat_bold_path = os.path.join(font_dir, "Montserrat-Bold.ttf")
 
@@ -35,11 +34,10 @@ try:
         montserrat_bold = ("Arial", 36, "bold") 
         raise FileNotFoundError
 
-    # Define font tuples for CTk widgets
+
     montserrat_regular = ("Montserrat", 16)
     montserrat_bold = ("Montserrat Bold", 36)
 except FileNotFoundError:
-    # Fallback fonts if Montserrat isn't available
     montserrat_regular = ("Arial", 16)
     montserrat_bold = ("Arial", 36, "bold")
 
