@@ -5,7 +5,7 @@ from PIL import Image, ImageFont
 import matplotlib.font_manager as fm
 
 ctk.set_appearance_mode("dark")
-# Color theme
+# Color theme (Change the json file for a different theme)
 ctk.set_default_color_theme("Harlequin.json")
 
 app = ctk.CTk()
