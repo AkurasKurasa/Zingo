@@ -6,7 +6,7 @@ import matplotlib.font_manager as fm
 
 ctk.set_appearance_mode("dark")
 # Color theme (Change the json file for a different theme)
-ctk.set_default_color_theme("Harlequin.json")
+ctk.set_default_color_theme("All-In/Harlequin.json")
 
 app = ctk.CTk()
 app.geometry("1080x720")

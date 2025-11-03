@@ -1,17 +1,21 @@
 import customtkinter as ctk
 from tkinter import font, filedialog, messagebox
 import os
-from PIL import Image, ImageFont
+from PIL import Image, ImageSequence, ImageDraw, ImageFont, ImageTk
 import matplotlib.font_manager as fm
 import random
+import warnings
+
+warnings.filterwarnings("ignore", message="CTkLabel Warning")
 
 ctk.set_appearance_mode("dark")
 # Color theme
 ctk.set_default_color_theme("All-In/Anthracite.json")
 
 app = ctk.CTk()
-app.geometry("1080x720")
+app.geometry("1025x550")
 app.title("All-In")
+app.resizable(False, False)
 
 # Data
 flashcards = []
@@ -285,7 +289,6 @@ def update_quiz_display(frame):
         command=show_homepage
     ).pack(pady=30)
     
-
 def show_quiz():
     """Display the Quiz page."""
     global current_quiz_index
@@ -310,104 +313,107 @@ def show_quiz():
 
 # PAGE DISPLAY FUNCTIONS
 
-def show_homepage():
+def homepage():
     clear_window()
 
-    # homepage frame
-    frame = ctk.CTkFrame(master=app)
-    frame.pack(pady=10, padx=10, fill="both", expand=True)
+    # --- Background ---
+    bg_frame = ctk.CTkFrame(app, fg_color="#0B0C10")
+    bg_frame.place(relx=0, rely=0, relwidth=1, relheight=1)
 
-    # Logo
-    logo_label = ctk.CTkLabel(
-        master=frame,
+    # --- Title (neon effect) ---
+    title_shadow = ctk.CTkLabel(
+        master=app,
         text="All-IN",
-        font=montserrat_black,
+        font=("Montserrat Black", 72),
+        text_color="#004B4B"
     )
-    logo_label.place(relx=0.5, rely=0.15, anchor="center")
+    title_shadow.place(relx=0.5, rely=0.203, anchor="center")
 
-    # Button frame
-    button_frame = ctk.CTkFrame(master=frame)
-    button_frame.pack(expand=True, pady=100)
+    title = ctk.CTkLabel(
+        master=app,
+        text="All-IN",
+        font=("Montserrat Black", 72),
+        text_color="#00FFC6"
+    )
+    title.place(relx=0.5, rely=0.2, anchor="center")
 
-    # start icon
-    start_icon_path = os.path.join(os.path.dirname(__file__), "png_icons", "start.png")
-    start_image = ctk.CTkImage(light_image=Image.open(start_icon_path), dark_image=Image.open(start_icon_path), size=(24, 24)) if os.path.exists(start_icon_path) else None
+    # --- Menu Frame (glass effect) ---
+    menu_frame = ctk.CTkFrame(
+        master=app,
+        fg_color=("#11141C", "#11141C"),
+        corner_radius=20,
+        border_width=1,
+        border_color="#1F2833"
+    )
+    menu_frame.place(relx=0.5, rely=0.55, anchor="center")
 
-    # Start Learning Button (Reviewer)
+    # --- Load Icons ---
+    def load_icon(filename):
+        path = os.path.join(os.path.dirname(__file__), "png_icons", filename)
+        if os.path.exists(path):
+            return ctk.CTkImage(
+                light_image=Image.open(path),
+                dark_image=Image.open(path),
+                size=(24, 24)
+            )
+        return None
+
+    create_icon = load_icon("create.png")
+    exit_icon = load_icon("exit.png")
+
+    # --- Buttons ---
+    button_kwargs = {
+        "master": menu_frame,
+        "width": 300,
+        "height": 50,
+        "corner_radius": 12,
+        "fg_color": "#1F2833",
+        "hover_color": "#00FFC6",
+        "font": ("Montserrat SemiBold", 18),
+        "text_color": "#C5C6C7",
+        "compound": "left"
+    }
+
     start_button = ctk.CTkButton(
-        master=button_frame,
-        text="Start Learning",
-        width=300,
-        height=50,
-        font=montserrat_semibold,
-        command=show_start_page,
-        image=start_image,
-        compound="left"
+        **button_kwargs,
+        text="Start Game",
+        command=show_quiz
     )
-    start_button.pack(pady=10, padx=10)
+    start_button.pack(pady=12, padx=10)
 
-    # Create icon
-    create_icon = os.path.join(os.path.dirname(__file__), "png_icons", "create.png")
-    create_image = ctk.CTkImage(light_image=Image.open(create_icon), dark_image=Image.open(create_icon), size=(24, 24)) if os.path.exists(create_icon) else None
-
-    # Start Quiz Button 
-    quiz_button = ctk.CTkButton(
-        master=button_frame,
-        text="Start Quiz",
-        width=300,
-        height=50,
-        font=montserrat_semibold,
-        command=show_quiz,
-        compound="left"
-    )
-    quiz_button.pack(pady=10, padx=10)
-    
-    # Create Flashcards Button
     create_button = ctk.CTkButton(
-        master=button_frame,
-        text="Create Flashcards",
-        width=300,
-        height=50,
-        font=montserrat_semibold,
-        command=show_create_flashcards_page,
-        image=create_image,
-        compound="left"
+        **button_kwargs,
+        text="Create Questions",
+        image=create_icon,
+        command=show_create_flashcards_page
     )
-    create_button.pack(pady=10, padx=10)
+    create_button.pack(pady=12, padx=10)
 
-    # Upload icon
-    upload_icon = os.path.join(os.path.dirname(__file__), "png_icons", "upload.png")
-    upload_image = ctk.CTkImage(light_image=Image.open(upload_icon), dark_image=Image.open(upload_icon), size=(24, 24)) if os.path.exists(upload_icon) else None
+    exit_button_kwargs = button_kwargs.copy()
+    exit_button_kwargs["fg_color"] = "#661111"
+    exit_button_kwargs["hover_color"] = "#FF5555"
 
-    # Upload PDF Button
-    upload_button = ctk.CTkButton(
-        master=button_frame,
-        text="Upload PDF",
-        width=300,
-        height=50,
-        font=montserrat_semibold,
-        command=show_upload_pdf_page,
-        image=upload_image,
-        compound="left"
-    )
-    upload_button.pack(pady=10, padx=10)
-
-    # Exit icon
-    exit_icon = os.path.join(os.path.dirname(__file__), "png_icons", "exit.png")
-    exit_image = ctk.CTkImage(light_image=Image.open(exit_icon), dark_image=Image.open(exit_icon), size=(24, 24)) if os.path.exists(exit_icon) else None
-
-    # Exit Button
     exit_button = ctk.CTkButton(
-        master=button_frame,
+        **exit_button_kwargs,
         text="Exit",
-        width=300,
-        height=50,
-        font=montserrat_semibold,
-        command=app.quit,
-        image=exit_image,
-        compound="left"
+        image=exit_icon,
+        command=app.quit
     )
-    exit_button.pack(pady=10, padx=10)
+    exit_button.pack(pady=12, padx=10)
+
+    # --- Footer ---
+    footer = ctk.CTkLabel(
+        master=app,
+        text="v1.0 — by All-IN Studios",
+        font=("Montserrat Medium", 12),
+        text_color="#6B6E70"
+    )
+    footer.place(relx=0.5, rely=0.95, anchor="center")
+
+
+
+def start_game_page():
+    pass
 
 def show_start_page():
     """Display the Start page with Flashcard Reviewer."""
@@ -503,126 +509,143 @@ def show_create_flashcards_page():
     global current_question_entry, current_answer_entry
     clear_window()
 
-    frame = ctk.CTkFrame(master=app)
-    frame.pack(pady=10, padx=10, fill="both", expand=True)
+    # Allow resizing for this page
+    app.resizable(True, True)
 
-    # Title
-    title_label = ctk.CTkLabel(
-        master=frame,
-        text="Create Flashcards",
+    # --- Main Frame ---
+    frame = ctk.CTkFrame(master=app, fg_color="transparent")
+    frame.pack(pady=30, padx=50, fill="both", expand=True)
+
+    # --- TITLE ---
+    ctk.CTkLabel(
+        frame,
+        text="Custom",
         font=montserrat_black,
-    )
-    title_label.pack(pady=20)
+        justify="center"
+    ).pack(anchor="center", pady=(0, 30))
 
-    # Question input
-    question_label = ctk.CTkLabel(
-        master=frame,
-        text="Question:",
-        font=montserrat_semibold,
-    )
-    question_label.pack(pady=5)
-    question_entry = ctk.CTkEntry(
-        master=frame,
-        width=400,
-        height=30,
-        placeholder_text="Enter the question",
-        font=montserrat_semibold
-    )
-    question_entry.pack(pady=5)
-    current_question_entry = question_entry # Store reference
+    # --- MAIN CONTENT WRAPPER (Two Columns) ---
+    content_frame = ctk.CTkFrame(frame, fg_color="transparent")
+    content_frame.pack(fill="both", expand=True)
 
-    # Answer input
-    answer_label = ctk.CTkLabel(
-        master=frame,
-        text="Answer:",
-        font=montserrat_semibold,
+    content_frame.grid_columnconfigure(0, weight=1)
+    content_frame.grid_columnconfigure(1, weight=1)
+
+    # =====================================================
+    # LEFT COLUMN: CREATE QUESTION
+    # =====================================================
+    left_col = ctk.CTkFrame(content_frame, fg_color="#111217", corner_radius=15)
+    left_col.grid(row=0, column=0, padx=20, pady=10, sticky="nsew")
+
+    ctk.CTkLabel(left_col, text="🧠 Create Question", font=montserrat_semibold).pack(
+        anchor="w", pady=(15, 10), padx=15
     )
-    answer_label.pack(pady=5)
-    answer_entry = ctk.CTkEntry(
-        master=frame,
-        width=400,
-        height=30,
-        placeholder_text="Enter the answer",
-        font=montserrat_semibold
-    )
-    answer_entry.pack(pady=5)
-    current_answer_entry = answer_entry # Store reference
 
-    # Save button (now functional)
-    save_button = ctk.CTkButton(
-        master=frame,
-        text="Save Flashcard",
-        width=200,
-        height=40,
-        font=montserrat_semibold,
-        command=save_flashcard # Link to new function
-    )
-    save_button.pack(pady=20)
+    question_types = ["Question-Answer", "True-or-False", "Multiple-Choice"]
+    question_type_var = ctk.StringVar(value=question_types[0])
 
-    back_button = ctk.CTkButton(
-        master=frame,
-        text="Back to Home",
-        width=200,
-        height=40,
-        font=montserrat_semibold,
-        command=show_homepage
-    )
-    back_button.pack(pady=10)
+    # --- Question Type Dropdown ---
+    ctk.CTkLabel(left_col, text="Question Type:", font=montserrat_semibold).pack(anchor="w", padx=15, pady=(0, 5))
+    ctk.CTkOptionMenu(
+        left_col,
+        values=question_types,
+        variable=question_type_var,
+        command=lambda choice: render_dynamic_inputs(choice),
+        width=250
+    ).pack(anchor="w", padx=15, pady=(0, 15))
 
-def show_upload_pdf_page():
-    """Display the Upload PDF page."""
-    clear_window()
+    # --- Dynamic Inputs ---
+    dynamic_frame = ctk.CTkFrame(left_col, fg_color="transparent")
+    dynamic_frame.pack(anchor="w", fill="x", padx=15, pady=(0, 15))
 
-    upload_frame = ctk.CTkFrame(master=app)
-    upload_frame.pack(pady=10, padx=10, fill="both", expand=True)
+    def render_dynamic_inputs(q_type):
+        for widget in dynamic_frame.winfo_children():
+            widget.destroy()
 
-    # App Title
-    title_label = ctk.CTkLabel(
-        master=upload_frame,
-        text="Upload PDF",
-        font=montserrat_black,
-    )
-    title_label.pack(pady=20)
+        global current_question_entry, current_answer_entry
 
-    # Placeholder for selected file
-    selected_file_label = ctk.CTkLabel(
-        master=upload_frame,
-        text="No file selected",
-        font=montserrat_semibold,
-    )
-    selected_file_label.pack(pady=10)
+        # Question input
+        ctk.CTkLabel(dynamic_frame, text="Question:", font=montserrat_semibold).pack(anchor="w", pady=(5, 0))
+        current_question_entry = ctk.CTkEntry(
+            dynamic_frame, width=350, height=35, placeholder_text="Enter the question"
+        )
+        current_question_entry.pack(anchor="w", pady=(0, 10))
 
-    select_button = ctk.CTkButton(
-        master=upload_frame,
-        text="Select PDF File",
-        width=200,
-        height=40,
-        font=montserrat_semibold,
-        command=lambda: select_pdf_file(selected_file_label)
-    )
-    select_button.pack(pady=20)
+        # Answer inputs (depending on type)
+        if q_type == "Question-Answer":
+            ctk.CTkLabel(dynamic_frame, text="Answer:", font=montserrat_semibold).pack(anchor="w", pady=(5, 0))
+            current_answer_entry = ctk.CTkEntry(
+                dynamic_frame, width=350, height=35, placeholder_text="Enter the answer"
+            )
+            current_answer_entry.pack(anchor="w", pady=(0, 5))
 
-    # Non-functional Process pDF
-    process_button = ctk.CTkButton(
-        master=upload_frame,
-        text="Process PDF",
-        width=200,
-        height=40,
-        font=montserrat_semibold,
-        command=process_pdf
-    )
-    process_button.pack(pady=10)
+        elif q_type == "True-or-False":
+            ctk.CTkLabel(dynamic_frame, text="Answer:", font=montserrat_semibold).pack(anchor="w", pady=(5, 0))
+            bool_var = ctk.StringVar(value="True")
+            current_answer_entry = bool_var
+            ctk.CTkSwitch(
+                dynamic_frame,
+                text="True / False",
+                variable=bool_var,
+                onvalue="True",
+                offvalue="False",
+            ).pack(anchor="w", pady=(3, 5))
 
-    # Back Button
-    back_button = ctk.CTkButton(
-        master=upload_frame,
-        text="Back to Home",
-        width=200,
-        height=40,
-        font=montserrat_semibold,
-        command=show_homepage
-    )
-    back_button.pack(pady=10)
+        elif q_type == "Multiple-Choice":
+            ctk.CTkLabel(dynamic_frame, text="Correct Answer:", font=montserrat_semibold).pack(anchor="w", pady=(5, 0))
+            current_answer_entry = ctk.CTkEntry(
+                dynamic_frame, width=350, height=35, placeholder_text="Enter the correct answer"
+            )
+            current_answer_entry.pack(anchor="w", pady=(0, 10))
 
-show_homepage()
+            ctk.CTkLabel(dynamic_frame, text="Other Choices:", font=montserrat_semibold).pack(anchor="w", pady=(5, 3))
+            for i in range(3):
+                ctk.CTkEntry(
+                    dynamic_frame, width=350, height=35, placeholder_text=f"Enter choice {i+1}"
+                ).pack(anchor="w", pady=(3, 3))
+
+    render_dynamic_inputs(question_type_var.get())
+
+    # --- Save button ---
+    ctk.CTkButton(
+        left_col, text="💾 Save Flashcard", width=200, height=40, command=save_flashcard
+    ).pack(anchor="w", padx=15, pady=(10, 20))
+
+    # =====================================================
+    # RIGHT COLUMN: IMPORT SECTION
+    # =====================================================
+    right_col = ctk.CTkFrame(content_frame, fg_color="#111217", corner_radius=15)
+    right_col.grid(row=0, column=1, padx=20, pady=10, sticky="nsew")
+
+    ctk.CTkLabel(right_col, text="📄 Import", font=montserrat_semibold).pack(anchor="w", pady=(15, 10), padx=15)
+
+    uploaded_pdfs = []
+
+    def upload_pdfs():
+        nonlocal uploaded_pdfs
+        file_paths = filedialog.askopenfilenames(title="Select PDF files", filetypes=[("PDF Files", "*.pdf")])
+        if file_paths:
+            uploaded_pdfs = list(file_paths)
+            filenames = [os.path.basename(f) for f in uploaded_pdfs]
+            display_text = (
+                f"✅ {len(filenames)} PDFs uploaded:\n" +
+                "\n".join(filenames[:5]) +
+                (f"\n...and {len(filenames)-5} more" if len(filenames) > 5 else "")
+            )
+            pdf_label.configure(text=display_text, justify="left")
+        else:
+            pdf_label.configure(text="❌ No PDFs selected")
+
+    ctk.CTkButton(
+        right_col, text="📤 Upload PDFs", width=200, height=40, command=upload_pdfs
+    ).pack(anchor="w", padx=15, pady=(5, 10))
+
+    pdf_label = ctk.CTkLabel(right_col, text="No PDFs uploaded yet", font=montserrat_semibold, justify="left")
+    pdf_label.pack(anchor="w", padx=15, pady=(5, 30))
+
+    # --- Back button ---
+    ctk.CTkButton(frame, text="⬅ Back to Home", width=220, height=40, command=show_homepage).pack(anchor="center", pady=(30, 10))
+
+homepage()
+
 app.mainloop()
