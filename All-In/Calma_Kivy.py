@@ -15,14 +15,14 @@ from kivy.metrics import dp
 from kivy.core.text import Label as CoreLabel
 from kivy.uix.filechooser import FileChooserIconView
 from kivy.uix.popup import Popup 
-from kivy.clock import Clock
+import re
 import os
-import threading
-import tkinter as tk
-from tkinter import filedialog
+import fitz
 from PIL import Image
 
 import os
+
+QUESTIONS = []
 
 # ------------------- Paths -------------------
 bg_path = os.path.join(os.path.dirname(__file__), "backgrounds", "homepage_bg.jpg")
@@ -429,9 +429,6 @@ class CustomPage(Screen):
         answerInput.bind(pos=update_answerInput_border, size=update_answerInput_border)
         layout.add_widget(answerInput)
 
-        def on_save_question(instance):
-            self.successLabel.text = "Question successfully saved!"
-
         # --- Create button label to auto-fit size ---
         save_question_text = "Save Question"
         saveQuestionLabel = CoreLabel(text=save_question_text, font_name=font_path, font_size=16)
@@ -454,6 +451,31 @@ class CustomPage(Screen):
             font_name=font_path,
             font_size=16,
         )
+
+        def on_save_question(instance):
+            self.successLabel.text = "Question successfully saved!"
+
+            question = {
+                'questionNo': len(QUESTIONS) + 1,
+                'question': questionInput.text,
+                'answer': answerInput.text,
+                'choices': [],
+                'type': questionTypeSpinner.text
+            }
+
+            if questionTypeSpinner.text == "Multiple Choice":
+                question['choices'] = answerInput.text.split(',')  
+                question['answer'] = question['choices'][0]
+            
+            elif questionTypeSpinner.text == "True/False":
+                question['choices'] = ["True", "False"]
+                question['answer'] = answerInput.text 
+                
+            else:
+                question['choices'] = []
+                question['answer'] = answerInput.text
+                
+            QUESTIONS.append(question)
 
         save_question_btn.bind(on_release=on_save_question)
 
@@ -552,11 +574,48 @@ class CustomPage(Screen):
             size_hint=(0.9, 0.9)
         )
         content.parent_popup = popup
-        popup.open()
+        popup.open()        
 
     def files_chosen(self, filepaths):
         self.upload_status_label.text = "Selected files:\n" + "\n".join(filepaths)
-        
+
+        if not filepaths:
+            print("No file selected.")
+            return
+
+        for filepath in filepaths:
+            if not filepath.lower().endswith(".pdf"):
+                print(f"Skipped non-PDF file: {filepath}")
+                continue
+
+            try:
+                doc = fitz.open(filepath)
+                text = ""
+                for page in doc:
+                    text += page.get_text("text")
+                doc.close()
+
+                print(f"\n--- PDF Content ({filepath}) ---\n")
+                 
+                # Normalize newlines (handles both \n and \r\n)
+                normalized_text = text.strip().replace("\r\n", "\n")
+
+                # Use regex to find all Question + Answer pairs
+                pattern = r"Question\s*\d*:\s*(.*?)\nAnswer:\s*(.*?)(?=\nQuestion|\Z)"
+                matches = re.findall(pattern, normalized_text, flags=re.DOTALL)
+
+                for question_text, answer_text in matches:
+                    QUESTIONS.append({
+                        "question": question_text.strip(),
+                        "answer": answer_text.strip()
+                    })
+
+                # Show results
+                for q in QUESTIONS:
+                    print(q)
+
+            except Exception as e:
+                print(f"Error reading {filepath}: {e}")
 
 # --------- File Chooser Popup -------------
 class FileChooserPopup(FloatLayout):
