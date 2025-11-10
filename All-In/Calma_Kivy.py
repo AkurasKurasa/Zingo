@@ -4,28 +4,29 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.button import Button
-from kivy.uix.screenmanager import ScreenManager, Screen
-from kivy.graphics import Rectangle, Color, Line
-from kivy.core.window import Window
-from kivy.uix.screenmanager import Screen
-from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
-from kivy.uix.spinner import Spinner
+from kivy.uix.spinner import Spinner, SpinnerOption
+from kivy.uix.screenmanager import ScreenManager, Screen
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.scrollview import ScrollView
+from kivy.uix.popup import Popup
+from kivy.graphics import Rectangle, Color, Line
 from kivy.metrics import dp
-from kivy.core.text import Label as CoreLabel
-from kivy.uix.filechooser import FileChooserIconView
-from kivy.uix.popup import Popup 
 from kivy.clock import Clock
+from kivy.core.window import Window
+from kivy.core.text import Label as CoreLabel
+from kivy.uix.filechooser import FileChooserListView
 import os
 import threading
 import tkinter as tk
 from tkinter import filedialog
 from PIL import Image
+from Custom_Page import CustomPage
 
 import os
 
 # ------------------- Paths -------------------
-bg_path = os.path.join(os.path.dirname(__file__), "backgrounds", "homepage_bg.jpg")
+bg_path = os.path.join(os.path.dirname(__file__), "backgrounds", "homepagebg.png")
 if not os.path.exists(bg_path):
     raise FileNotFoundError(f"Background image not found: {bg_path}")
 
@@ -118,9 +119,22 @@ class StartPage(Screen):
 
 # ------------------- Game Page -------------------
 class GamePage(Screen):
-    def __init__(self, question_type="Short Answer", **kwargs):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.current_question_index = 0
+        self.points = 0
+        # multiplier increases with correct streak, but cap to avoid runaway points
+        self.multiplier = 1.0
+        self.BASE_POINTS = 100
+        self.MAX_MULTIPLIER = 3.0
+        self.correct_streak = 0
+        # questions_answered will reflect number of UNIQUE correctly answered questions
+        self.questions_answered = 0
+        self.correctly_answered = set()
+        self.incorrect_questions = []  # Store indices of incorrectly answered questions
+        self.questions_queue = []  # Store the sequence of questions to ask
         layout = FloatLayout()
+        self.layout = layout  # Store reference to layout
 
         # --- Top GridLayout (2x2) ---
         top_grid = GridLayout(
@@ -144,30 +158,38 @@ class GamePage(Screen):
             lbl.bind(size=lambda instance, value: setattr(instance, 'text_size', (instance.width, None)))
             return lbl
 
-        top_grid.add_widget(make_label("Points: 100", "left"))
-        top_grid.add_widget(make_label("1.25x", "right"))
-        top_grid.add_widget(make_label("Required: 1,000,000", "left"))
-        top_grid.add_widget(make_label("Questions: 1/100", "right"))
+        self.points_label = make_label("Points: 0", "left")
+        self.multiplier_label = make_label("1.00x", "right")
+        self.required_label = make_label("Required: 0", "left")
+        self.questions_label = make_label("Questions: 0/0", "right")
+
+        top_grid.add_widget(self.points_label)
+        top_grid.add_widget(self.multiplier_label)
+        top_grid.add_widget(self.required_label)
+        top_grid.add_widget(self.questions_label)
 
         layout.add_widget(top_grid)
 
         # --- Question Labels ---
         questionNumberLabel = Label(
-            text="Question 1",
+            # start with no questions
+            text="Question 0/0",
             font_size=36,
             color=(1,1,1,1),
             pos_hint={'center_x': 0.5, 'center_y': 0.75},
             font_name=font_path
         )
+        self.question_number_label_ref = questionNumberLabel
         layout.add_widget(questionNumberLabel)
 
         questionLabel = Label(
-            text="What is the capital of France?",
+            text="No questions yet. Add questions in Custom.",
             font_size=28,
             color=(1,1,1,1),
             pos_hint={'center_x': 0.5, 'center_y': 0.65},
             font_name=font_path
         )
+        self.question_label_ref = questionLabel
         layout.add_widget(questionLabel)
 
         # --- Middle layout placeholder ---
@@ -197,42 +219,218 @@ class GamePage(Screen):
 
         self.add_widget(layout)
 
-        # --- Build middle layout based on question_type ---
-        self.update_middle_layout(question_type)
+        # Initialize with empty question
+        self.update_middle_layout()
 
-    def update_middle_layout(self, question_type):
+    def on_enter(self):
+        # This is called when the screen is entered
+        app = App.get_running_app()
+        # Reset per-entry transient state
+        self.current_question_index = 0
+        self.points = 0
+        self.multiplier = 1.0
+        self.correct_streak = 0
+        self.incorrect_questions = []
+        self.questions_queue = []
+        self.correctly_answered = set()
+        self.questions_answered = 0
+        if app.custom_questions:
+            # Initialize the questions queue with sequential indices
+            self.questions_queue = list(range(len(app.custom_questions)))
+            # show first question
+            self.show_question(self.current_question_index)
+        else:
+            # no questions: show placeholder
+            self.question_number_label_ref.text = "Question 0/0"
+            self.question_label_ref.text = "No questions yet. Add questions in Custom."
+            self.middle_layout.clear_widgets()
+            # add a placeholder button to indicate no questions
+            placeholder = Button(text='No questions', font_size=20, size_hint=(1,1), background_normal='', background_color=(0,0,0,0), color=(1,1,1,1), font_name=font_path)
+            self.add_white_border(placeholder)
+            self.middle_layout.add_widget(placeholder)
+        # update required points based on number of questions
+        total_questions = len(app.custom_questions)
+        required = total_questions * self.BASE_POINTS
+        self.required_label.text = f"Required: {required:,}"
+    
+    def show_question(self, index):
+        app = App.get_running_app()
+        if not app.custom_questions:
+            return
+        
+        question = app.custom_questions[index]
+        
+        # Update question text
+        self.question_label_ref.text = question['text']
+        
+        # Update question number
+        total_questions = len(app.custom_questions)
+        self.question_number_label_ref.text = f"Question {index + 1}/{total_questions}"
+        
+        # Update score display
+        self.questions_label.text = f"Questions: {self.questions_answered}/{total_questions}"
+        self.points_label.text = f"Points: {self.points}"
+        self.multiplier_label.text = f"{self.multiplier:.2f}x"
+        # update required points dynamically (one base point-per-question target)
+        required = total_questions * self.BASE_POINTS
+        self.required_label.text = f"Required: {required:,}"
+
+        self.current_question = question  # Store current question
+        self.update_middle_layout(question_type=question['type'], answers=question.get('answers', []))
+
+    def check_answer(self, answer):
+        if not hasattr(self, 'current_question'):
+            return
+        
+        is_correct = False
+        
+        if self.current_question['type'] == "Multiple Choice":
+            is_correct = answer == self.current_question['correct_answer']
+        elif self.current_question['type'] == "True/False":
+            is_correct = answer.lower() == self.current_question['correct_answer'].lower()
+        elif self.current_question['type'] == "Short Answer":
+            # For short answer, handle the TextInput widget's text
+            if hasattr(self, 'answer_input'):
+                user_answer = self.answer_input.text
+            else:
+                user_answer = answer # Fallback, should use answer_input.text
+            is_correct = user_answer.lower().strip() == self.current_question['correct_answer'].lower().strip()
+            
+        if is_correct:
+            # Only count the question once as answered
+            first_time = self.current_question_index not in self.correctly_answered
+            if first_time:
+                self.correctly_answered.add(self.current_question_index)
+            self.questions_answered = len(self.correctly_answered)
+
+            self.correct_streak += 1
+            self.multiplier = 1.0 + (self.correct_streak * 0.05)
+            # cap multiplier to avoid runaway scoring
+            mult = min(self.multiplier, self.MAX_MULTIPLIER)
+            points_earned = int(self.BASE_POINTS * mult)
+            self.points += points_earned
+
+            # If this was an incorrect question that was answered correctly, remove it
+            if self.current_question_index in self.incorrect_questions:
+                try:
+                    self.incorrect_questions.remove(self.current_question_index)
+                except ValueError:
+                    pass
+        else:
+            self.correct_streak = 0
+            self.multiplier = 1.0
+            # Add the question to incorrect_questions if not already there
+            if self.current_question_index not in self.incorrect_questions:
+                self.incorrect_questions.append(self.current_question_index)
+
+        # Update question/score labels
+        total_questions = len(App.get_running_app().custom_questions)
+        self.questions_label.text = f"Questions: {self.questions_answered}/{total_questions}"
+        self.points_label.text = f"Points: {self.points}"
+        self.multiplier_label.text = f"{self.multiplier:.2f}x"
+
+        # Check for completion: all questions answered correctly
+        if total_questions > 0 and len(self.correctly_answered) >= total_questions:
+            # Game over - all correct
+            self.end_game()
+            return
+
+        # Otherwise move to next
+        self.next_question(None)
+        
+    def next_question(self, instance):
+        app = App.get_running_app()
+        if not app.custom_questions:
+            return
+            
+        total_questions = len(app.custom_questions)
+        
+        # If this was the last question in the queue (or we are reviewing incorrect ones)
+        if self.current_question_index >= total_questions - 1:
+            # Check if there are still incorrect questions to re-ask
+            if self.incorrect_questions:
+                # Find the next question to ask among the incorrect ones
+                try:
+                    current_idx_in_incorrect = self.incorrect_questions.index(self.current_question_index)
+                    if current_idx_in_incorrect < len(self.incorrect_questions) - 1:
+                        # Move to the next incorrect question
+                        self.current_question_index = self.incorrect_questions[current_idx_in_incorrect + 1]
+                    else:
+                        # Reached the end of the incorrect list, wrap back to start
+                        self.current_question_index = self.incorrect_questions[0]
+                except ValueError:
+                    # Current question was correctly answered and removed, start from the first incorrect one
+                    self.current_question_index = self.incorrect_questions[0]
+            else:
+                # All questions answered correctly, start over from beginning
+                self.current_question_index = 0
+        else:
+            # Move to the next question in sequential order
+            self.current_question_index += 1
+            
+        self.show_question(self.current_question_index)
+        
+    def prev_question(self, instance):
+        app = App.get_running_app()
+        if not app.custom_questions:
+            return
+            
+        if self.current_question_index > 0:
+            self.current_question_index -= 1
+            self.show_question(self.current_question_index)
+
+    def update_middle_layout(self, question_type="Short Answer", answers=None):
         self.middle_layout.clear_widgets()
 
         if question_type == "Multiple Choice":
             self.middle_layout.cols = 2
             self.middle_layout.rows = 2
-            for i in range(1,5):
-                btn = self.make_option_button(f"Option {i}")
-                self.middle_layout.add_widget(btn)
+            if answers and len(answers) >= 4:
+                for answer in answers[:4]:
+                    btn = self.make_option_button(answer)
+                    btn.bind(on_release=lambda x, a=answer: self.check_answer(a))
+                    self.middle_layout.add_widget(btn)
+            else:
+                for i in range(1,5):
+                    btn = self.make_option_button(f"Option {i}")
+                    self.middle_layout.add_widget(btn)
 
         elif question_type == "True/False":
             self.middle_layout.cols = 2
             self.middle_layout.rows = 1
             for t in ["True", "False"]:
                 btn = self.make_option_button(t)
+                btn.bind(on_release=lambda x, a=t: self.check_answer(a))
                 self.middle_layout.add_widget(btn)
 
         elif question_type == "Short Answer":
             self.middle_layout.cols = 1
             self.middle_layout.rows = 2
-            text_input = TextInput(
+            self.answer_input = TextInput(
                 hint_text="Type your answer here...",
                 font_size=24,
-                size_hint=(1,1),
+                size_hint=(1, 0.7),
                 multiline=False,
                 background_normal='',
                 background_color=(0,0,0,0),
                 foreground_color=(1,1,1,1),
+                cursor_color=(1,1,1,1),
                 font_name=font_path
             )
+
             submit_btn = self.make_option_button("Submit")
-            self.middle_layout.add_widget(text_input)
+            submit_btn.bind(on_release=lambda x: self.check_answer(None)) 
+            self.middle_layout.add_widget(self.answer_input)
             self.middle_layout.add_widget(submit_btn)
+
+    def end_game(self):
+        # show a simple popup and return to start page
+        popup = Popup(title='Game Complete',
+                      content=Label(text='All questions answered correctly!', font_name=font_path),
+                      size_hint=(0.6, 0.4))
+        popup.open()
+        # Optionally navigate back to start after a short delay
+        Clock.schedule_once(lambda dt: setattr(self.manager, 'current', 'start_page'), 2)
 
     def make_option_button(self, text):
         btn = Button(
@@ -255,382 +453,30 @@ class GamePage(Screen):
         widget.bind(pos=lambda instance, val, b=border: setattr(b, 'rectangle', (instance.x, instance.y, instance.width, instance.height)))
         widget.bind(size=lambda instance, val, b=border: setattr(b, 'rectangle', (instance.x, instance.y, instance.width, instance.height)))
 
-# ------------------- Custom Page Example -------------------
-class CustomPage(Screen):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        layout = FloatLayout()
 
-        # --- Title label ---
-        titleLabel = Label(
-            text="CUSTOM",
-            font_size=32,
-            color=(1, 1, 1, 1),
-            pos_hint={'center_x': 0.1, 'center_y': 0.92},
-            font_name=font_path,
-        )
-        layout.add_widget(titleLabel)
+    from Custom_Page import CustomPage
 
-        # --- Sub-label ---
-        createQuestionLabel = Label(
-            text="Create Questions",
-            font_size=24,
-            color=(1, 1, 1, 1),
-            pos_hint={'center_x': 0.145, 'center_y': 0.83},
-            font_name=font_path,
-        )
-        layout.add_widget(createQuestionLabel)
-
-        # --- Spinner setup ---
-        spinner_values = ("Multiple Choice", "True/False", "Short Answer")
-        spinner_text = "Select Question Type"
-
-        def fit_spinner_width(texts, font_name, font_size=16, padding=40):
-            longest = max(texts, key=len)
-            label = CoreLabel(text=longest, font_name=font_name, font_size=font_size)
-            label.refresh()
-            text_width = label.texture.size[0]
-            return text_width + dp(padding)
-
-        spinner_width = fit_spinner_width(spinner_values + (spinner_text,), font_path)
-
-        questionTypeSpinner = Spinner(
-            text=spinner_text,
-            values=spinner_values,
-            pos_hint={'center_x': 0.145, 'center_y': 0.73},
-            size_hint=(None, None),
-            size=(spinner_width, dp(32)),
-            font_name=font_path,
-            font_size=16,
-            background_normal='',
-            background_down='',
-            background_color=(0, 0, 0, 0),
-            color=(1, 1, 1, 1),
-        )
-
-        # --- Spinner border ---
-        with questionTypeSpinner.canvas.before:
-            Color(1, 1, 1, 1)
-            spinner_border = Line(rectangle=(0, 0, 0, 0), width=1.5)
-
-        def update_spinner_border(*_):
-            spinner_border.rectangle = (
-                questionTypeSpinner.x,
-                questionTypeSpinner.y,
-                questionTypeSpinner.width,
-                questionTypeSpinner.height,
-            )
-
-        questionTypeSpinner.bind(pos=update_spinner_border, size=update_spinner_border)
-        layout.add_widget(questionTypeSpinner)
-
-        # --- Question label ---
-        questionLabel = Label(
-            text="Question:",
-            font_size=20,
-            color=(1, 1, 1, 1),
-            pos_hint={'center_x': 0.085, 'center_y': 0.63},
-            font_name=font_path,
-        )
-        layout.add_widget(questionLabel)
-
-        # --- Calculate input size based on hint text ---
-        questionInput_hint_text = "Enter question here..."
-        questionInputLabel = CoreLabel(text=questionInput_hint_text, font_name=font_path, font_size=16)
-        questionInputLabel.refresh()
-        text_width, text_height = questionInputLabel.texture.size
-
-        questionInput_width = text_width + dp(100)   # add padding
-        questionInput_height = text_height + dp(12) # add vertical padding
-
-        # --- Text input box ---
-        questionInput = TextInput(
-            hint_text=questionInput_hint_text,
-            multiline=False,
-            size_hint=(None, None),
-            size=(questionInput_width, questionInput_height),
-            pos_hint={'center_x': 0.185, 'center_y': 0.56},
-            background_normal='',
-            background_active='',
-            background_color=(0, 0, 0, 0),   # transparent
-            foreground_color=(1, 1, 1, 1),   # white text
-            cursor_color=(1, 1, 1, 1),
-            hint_text_color=(1, 1, 1, 0.4),
-            font_name=font_path,
-            font_size=16,
-        )
-
-        # --- White border for input ---
-        with questionInput.canvas.before:
-            Color(1, 1, 1, 1)
-            questionInput_border = Line(rectangle=(0, 0, 0, 0), width=1.5)
-
-        def update_questionInput_border(*_):
-            questionInput_border.rectangle = (
-                questionInput.x,
-                questionInput.y,
-                questionInput.width,
-                questionInput.height,
-            )
-
-        questionInput.bind(pos=update_questionInput_border, size=update_questionInput_border)
-        layout.add_widget(questionInput)
-
-        # --- Answer label ---
-        answerLabel = Label(
-            text="Answer:",
-            font_size=20,
-            color=(1, 1, 1, 1),
-            pos_hint={'center_x': 0.08, 'center_y': 0.45},
-            font_name=font_path,
-        )
-        layout.add_widget(answerLabel)
-
-        # --- Answer input box ---
-        # --- Calculate input size based on hint text ---
-        answerInput_hint_text = "Enter answer here..."
-        answerInputLabel = CoreLabel(text=questionInput_hint_text, font_name=font_path, font_size=16)
-        answerInputLabel.refresh()
-        text_width, text_height = answerInputLabel.texture.size
-
-        answerInput_width = text_width + dp(100)   # add padding
-        answerInput_height = text_height + dp(12) # add vertical padding
-
-        # --- Text input box ---
-        answerInput = TextInput(
-            hint_text=answerInput_hint_text,
-            multiline=False,
-            size_hint=(None, None),
-            size=(answerInput_width, answerInput_height),
-            pos_hint={'center_x': 0.185, 'center_y': 0.38},
-            background_normal='',
-            background_active='',
-            background_color=(0, 0, 0, 0),   # transparent
-            foreground_color=(1, 1, 1, 1),   # white text
-            cursor_color=(1, 1, 1, 1),
-            hint_text_color=(1, 1, 1, 0.4),
-            font_name=font_path,
-            font_size=16,
-        )
-
-        # --- White border for input ---
-        with answerInput.canvas.before:
-            Color(1, 1, 1, 1)
-            answerInput_border = Line(rectangle=(0, 0, 0, 0), width=1.5)
-
-        def update_answerInput_border(*_):
-            answerInput_border.rectangle = (
-                answerInput.x,
-                answerInput.y,
-                answerInput.width,
-                answerInput.height,
-            )
-
-        answerInput.bind(pos=update_answerInput_border, size=update_answerInput_border)
-        layout.add_widget(answerInput)
-
-        def on_save_question(instance):
-            self.successLabel.text = "Question successfully saved!"
-
-        # --- Create button label to auto-fit size ---
-        save_question_text = "Save Question"
-        saveQuestionLabel = CoreLabel(text=save_question_text, font_name=font_path, font_size=16)
-        saveQuestionLabel.refresh()
-        text_width, text_height = saveQuestionLabel.texture.size
-
-        save_question_btn_width = text_width + dp(60)   # horizontal padding
-        save_question_btn_height = text_height + dp(12) # vertical padding
-
-        # --- Button with white background and black text (no border) ---
-        save_question_btn = Button(
-            text=save_question_text,
-            size_hint=(None, None),
-            size=(save_question_btn_width, save_question_btn_height),
-            pos_hint={'center_x': 0.128, 'center_y': 0.25},
-            background_normal='',
-            background_down='',
-            background_color=(1, 1, 1, 1),  # white background
-            color=(0, 0, 0, 1),             # black text
-            font_name=font_path,
-            font_size=16,
-        )
-
-        save_question_btn.bind(on_release=on_save_question)
-
-        layout.add_widget(save_question_btn)
-
-        # --- Answer label ---
-        self.successLabel = Label(
-            text="",
-            font_size=20,
-            color=(1, 1, 1, 1),
-            pos_hint={'center_x': 0.18, 'center_y': 0.15},
-            font_name=font_path,
-        )
-        layout.add_widget(self.successLabel)
-        
-        # --- Sub-label ---
-        importLabel = Label(
-            text="Import",
-            font_size=24,
-            color=(1, 1, 1, 1),
-            pos_hint={'center_x': 0.65, 'center_y': 0.83},
-            font_name=font_path,
-        )
-        layout.add_widget(importLabel)
-
-        # --- Upload PDF Button ---
-        show_filechooser_btn = Button(
-            text="Upload PDF",
-            size_hint=(None, None),
-            size=(dp(125), dp(35)),
-            pos_hint={'center_x': 0.68, 'center_y': 0.74},
-            background_normal='',
-            background_down='',
-            background_color=(0, 0, 0, 0),  # transparent
-            color=(1, 1, 1, 1),             # white text
-            font_size=16,
-            font_name=font_path
-        )
-
-        # --- White border for button ---
-        with show_filechooser_btn.canvas.before:
-            Color(1, 1, 1, 1)
-            btn_border = Line(rectangle=(show_filechooser_btn.x, show_filechooser_btn.y,
-                                        show_filechooser_btn.width, show_filechooser_btn.height),
-                            width=1.5)
-
-        def update_btn_border(*args):
-            btn_border.rectangle = (
-                show_filechooser_btn.x,
-                show_filechooser_btn.y,
-                show_filechooser_btn.width,
-                show_filechooser_btn.height
-            )
-
-        show_filechooser_btn.bind(pos=update_btn_border, size=update_btn_border)
-        show_filechooser_btn.bind(on_release=self.open_file_chooser)
-        layout.add_widget(show_filechooser_btn)
-
-        self.upload_status_label = Label(
-            text="No files selected",
-            font_size=16,
-            color=(1, 1, 1, 1),
-            pos_hint={'center_x': 0.67, 'center_y': 0.6},
-            font_name=font_path,
-            size_hint=(None, None),
-        )
-        # Measure text size dynamically
-        self.upload_status_label.texture_update()
-        self.upload_status_label.width = self.upload_status_label.texture_size[0] + dp(10)  # add small padding
-        self.upload_status_label.height = self.upload_status_label.texture_size[1]
-        self.upload_status_label.halign = "left"
-        self.upload_status_label.valign = "middle"
-        layout.add_widget(self.upload_status_label)
-
-        # --- Back button ---
-        back_btn = Button(
-            text="Back",
-            size=(120, 50),
-            size_hint=(None, None),
-            pos_hint={'x': 0.02, 'y': 0.02},
-            background_normal='',
-            background_color=(0, 0, 0, 0),
-            font_name=font_path,
-            font_size=28,
-        )
-        back_btn.bind(on_release=lambda instance: switch_screen(instance, self.manager, "start_page"))
-        layout.add_widget(back_btn)
-
-        self.add_widget(layout)
-    
-    def open_file_chooser(self, instance):
-        content = FileChooserPopup(select_callback=self.files_chosen)
-        popup = Popup(
-            title="Select files",
-            content=content,
-            size_hint=(0.9, 0.9)
-        )
-        content.parent_popup = popup
-        popup.open()
-
-    def files_chosen(self, filepaths):
-        self.upload_status_label.text = "Selected files:\n" + "\n".join(filepaths)
-        
-
-# --------- File Chooser Popup -------------
-class FileChooserPopup(FloatLayout):
-    def __init__(self, select_callback, **kwargs):
-        super().__init__(**kwargs)
-        self.select_callback = select_callback
-
-        # FileChooserIconView with multiselect
-        self.file_chooser = FileChooserIconView(
-            size_hint=(0.95, 0.75),
-            pos_hint={'x':0.025, 'y':0.2},
-            multiselect=True
-        )
-        self.add_widget(self.file_chooser)
-
-        # Up button
-        self.up_button = Button(
-            text="Up",
-            size_hint=(0.2, 0.08),
-            pos_hint={'x':0.025, 'y':0.1}
-        )
-        self.up_button.bind(on_release=self.go_up)
-        self.add_widget(self.up_button)
-
-        # Select button
-        self.select_button = Button(
-            text="Select",
-            size_hint=(0.35, 0.08),
-            pos_hint={'x':0.3, 'y':0.1}
-        )
-        self.select_button.bind(on_release=self.select_files)
-        self.add_widget(self.select_button)
-
-        # Close button
-        self.close_button = Button(
-            text="Close",
-            size_hint=(0.2, 0.08),
-            pos_hint={'x':0.7, 'y':0.1}
-        )
-        self.close_button.bind(on_release=self.close_popup)
-        self.add_widget(self.close_button)
-
-    def go_up(self, instance):
-        parent = os.path.dirname(self.file_chooser.path)
-        if parent:
-            self.file_chooser.path = parent
-
-    def select_files(self, instance):
-        selection = self.file_chooser.selection
-        if selection:
-            accessible_files = []
-            for f in selection:
-                try:
-                    os.stat(f)
-                    accessible_files.append(f)
-                except Exception as e:
-                    print(f"Cannot access file {f}: {e}")
-            if accessible_files:
-                self.select_callback(accessible_files)
-                self.parent_popup.dismiss()
-        else:
-            print("No files selected")
-
-    def close_popup(self, instance):
-        self.parent_popup.dismiss()
-
-# ------------------- App ------------------
+# ------------------- Main App -------------------
 class AllInApp(App):
-    def build(self):
-        sm = ScreenManager()
-        sm.add_widget(StartPage(name="start_page"))
-        sm.add_widget(GamePage(name="game_page"))
-        sm.add_widget(CustomPage(name="custom_page"))
-        return sm
+    custom_questions = []
 
-if __name__ == "__main__":
+    def build(self):
+        # Default questions for initial testing (commented out)
+        # Uncomment or populate this list to start with preloaded questions.
+        # self.custom_questions = [
+        #     {'text': 'What is the capital of France?', 'type': 'Short Answer', 'correct_answer': 'Paris', 'answers': []},
+        #     {'text': 'Is the sky usually blue?', 'type': 'True/False', 'correct_answer': 'True', 'answers': ['True', 'False']},
+        #     {'text': 'Which of these is a vegetable?', 'type': 'Multiple Choice', 'correct_answer': 'Carrot', 'answers': ['Apple', 'Carrot', 'Banana', 'Grape']},
+        # ]
+        # Start with no questions so the user can add them via the Custom page
+        self.custom_questions = []
+        
+        self.sm = ScreenManager()
+        self.sm.add_widget(StartPage(name='start_page'))
+        self.sm.add_widget(CustomPage(name='custom_page'))
+        self.sm.add_widget(GamePage(name='game_page'))
+
+        return self.sm
+
+if __name__ == '__main__':
     AllInApp().run()

@@ -1,0 +1,25 @@
+Ignore the virtual environment folder
+
+venv/
+.venv/
+
+Byte-compiled / optimized / DLL files
+
+pycache/
+*.py[cod]
+*$py.class
+
+Logs and databases
+
+*.log
+*.sqlite
+*.db
+
+OS generated files
+
+.DS_Store
+Thumbs.db
+
+Kivy-specific build files
+
+*.kv.cache

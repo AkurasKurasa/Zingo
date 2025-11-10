@@ -10,7 +10,7 @@ warnings.filterwarnings("ignore", message="CTkLabel Warning")
 
 ctk.set_appearance_mode("dark")
 # Color theme
-ctk.set_default_color_theme("All-In/Anthracite.json")
+ctk.set_default_color_theme("../Anthracite.json")
 
 app = ctk.CTk()
 app.geometry("1025x550")
