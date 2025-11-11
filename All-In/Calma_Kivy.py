@@ -23,6 +23,10 @@ from PIL import Image
 import os
 
 QUESTIONS = []
+POINTS = 100
+REQUIRED_POINTS = 1000000
+MULTIPLIER = 1
+
 
 # ------------------- Paths -------------------
 bg_path = os.path.join(os.path.dirname(__file__), "backgrounds", "homepage_bg.jpg")

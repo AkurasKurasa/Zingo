@@ -1,0 +1,47 @@
+[
+    {
+        "question_type": "Short Answer",
+        "question": "What is the capital of France?",
+        "answer": "Paris \n ",
+        "choices": null
+    },
+    {
+        "question_type": "Multiple Choice",
+        "question": "Which is not a vegetable?",
+        "answer": "Tomato",
+        "choices": [
+            [
+                " Kelp",
+                " Cabbage",
+                " Lettuce \n "
+            ]
+        ]
+    },
+    {
+        "question_type": "Short Answer",
+        "question": "What is Einstein\u2019s formula for relativity?",
+        "answer": "E=mc2 \n ",
+        "choices": null
+    },
+    {
+        "question_type": "Short Answer",
+        "question": "Who was considered as the King of Pop?",
+        "answer": "Michael Jackson \n ",
+        "choices": null
+    },
+    {
+        "question_type": "True/False",
+        "question": "Michael Jackson is considered the GOAT of Basketball?",
+        "answer": "False",
+        "choices": [
+            "True",
+            "False"
+        ]
+    },
+    {
+        "question_type": "Short Answer",
+        "question": "Who invented the Pythagorean Theorem?",
+        "answer": "Pythagoras",
+        "choices": null
+    }
+]
