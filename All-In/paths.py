@@ -5,7 +5,7 @@ import os
 BASE_DIR = os.path.dirname(__file__)
 
 # --- Resource paths ---
-BG_PATH = os.path.join(BASE_DIR, "backgrounds", "homepage_bg.jpg")
+BG_PATH = os.path.join(BASE_DIR, "backgrounds", "allin_background.png")
 FONT_PATH = os.path.join(BASE_DIR, "fonts", "PixelifySans-Regular.ttf")
 QUESTIONS_CSV_PATH = os.path.join(BASE_DIR, "questions.csv")
 QUESTIONS_JSON_PATH = os.path.join(BASE_DIR, "questions.json")
