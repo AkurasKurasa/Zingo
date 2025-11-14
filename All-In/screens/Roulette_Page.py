@@ -18,10 +18,12 @@ class RoulettePage(Screen):
             font_size=32,
             halign="center",
             valign="middle",
-            text_size=(self.width, None),
             pos_hint={'center_x': 0.5, 'center_y': 0.6},
+            size_hint_x=(0.7),
             font_name=self.app.font_path
         )
+
+        label.bind(size=lambda instance, value: setattr(instance, 'text_size', value))
         layout.add_widget(label)
 
         # --- Continue button ---
@@ -38,4 +40,6 @@ class RoulettePage(Screen):
         self.add_widget(layout)
 
     def go_back_to_game(self, instance):
+        game_page = self.manager.get_screen("game_page")
+        game_page.continue_after_roulette()
         self.manager.current = "game_page"

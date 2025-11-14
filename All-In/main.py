@@ -30,7 +30,7 @@ class AllInApp(App):
         self.QUESTIONS = []
         self.QUESTION_INDEX = 0
         self.POINTS = 100 
-        self.REQUIRED_POINTS = 1_000_000
+        self.REQUIRED_POINTS = 102
         self.MULTIPLIER = 1
         self.QUESTIONS_IN_A_ROW = 0
 
