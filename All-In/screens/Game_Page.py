@@ -1,4 +1,3 @@
-# screens/game_page.py
 from kivy.uix.screenmanager import Screen
 from kivy.uix.label import Label
 from kivy.uix.button import Button
