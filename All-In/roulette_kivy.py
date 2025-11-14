@@ -143,11 +143,11 @@ class WheelWidget(Widget):
         # ---- canvas -----------------------------------------------------
         self.canvas.clear()
         with self.canvas:
-            # 1. WHEEL
+            # WHEEL
             Color(1, 1, 1, 1)
             Rectangle(texture=self._tex, pos=self.pos, size=self.size)
 
-            # 2. LOGO (small, circular, centered)
+            # LOGO 
             if self.logo_texture:
                 cx, cy = self.center_x, self.center_y
                 radius = int(self.size_px * 0.05)  # 5% of wheel
@@ -168,36 +168,37 @@ class WheelWidget(Widget):
                 StencilUnUse()
                 StencilPop()
 
-            # 3. 8-bit yellow arrow (bottom)
-            bottom = self.y
+            # 8-bit yellow arrow 
+            top = self.top
+            
             arrow = [
                 [0,0,1,0,0],
-                [0,0,1,0,0],
-                [1,1,1,1,1],
                 [0,1,1,1,0],
+                [1,1,1,1,1],
+                [0,0,1,0,0],
                 [0,0,1,0,0],
             ]
+
             scale = 7
             w_a = len(arrow[0]) * scale
             h_a = len(arrow) * scale
             ox = cx - w_a // 2
-            oy = bottom + 8
+            
+            oy = top - h_a - 8 
 
-            # shadow
             Color(0, 0, 0, 0.6)
             for y, row in enumerate(arrow):
                 for x, p in enumerate(row):
                     if p:
                         Rectangle(pos=(ox + x*scale + 2, oy + y*scale + 2),
-                                  size=(scale, scale))
+                                size=(scale, scale))
 
-            # yellow
             Color(1.0, 0.9, 0.2, 1)
             for y, row in enumerate(arrow):
                 for x, p in enumerate(row):
                     if p:
                         Rectangle(pos=(ox + x*scale, oy + y*scale),
-                                  size=(scale, scale))
+                                size=(scale, scale))
 
 
 # ---- KV layout ----
@@ -232,16 +233,17 @@ KV = '''
             spacing: 8
             TextInput:
                 id: bet_input
-                hint_text: "Bet amount (default 50)"
+                hint_text: "Bet\\namount"
                 font_name: "PixelFont"
                 input_filter: 'int'
                 multiline: False
-                size_hint_x: 0.5
+                size_hint_x: 0.8
+                font_size: '18sp'
                 text: str(root.bet_amount)
                 background_color: 0.07, 0.07, 0.08, 1
                 foreground_color: 1, 1, 1, 1
                 cursor_color: 1, 1, 1, 1
-                padding: [6, 6, 6, 6]
+
             Button:
                 text: "Place Number Bet"
                 font_name: "PixelFont"
