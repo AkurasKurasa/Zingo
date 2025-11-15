@@ -1,0 +1,5 @@
+gyatt input = input_value
+gyatt output = input + " world"
+
+TYPESHI("Hello " + input)
+REPOST output

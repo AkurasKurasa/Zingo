@@ -10,23 +10,32 @@ from screens.Game_Page import GamePage
 from screens.Custom_Page import CustomPage
 from screens.Roulette_Page import RoulettePage
 
+from dataclasses import dataclass
 import paths
 import json
 
 # --- Window setup ---
-img = Image.open(paths.BG_PATH)
+img = Image.open(paths.HOME_BG_PATH)
 img_width, img_height = img.size
 Config.set('graphics', 'width', str(img_width))
 Config.set('graphics', 'height', str(img_height))
 Config.set('graphics', 'resizable', '0')
 Window.size = (img_width, img_height)
 
+# --- Data Structures ---
+@dataclass
+class Question:
+    question_type: str
+    question: str
+    answer: str
+    choices: list | None = None
+
 class AllInApp(App):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        # CONSTANTS
+        # Game States
         self.QUESTIONS = []
         self.QUESTION_INDEX = 0
         self.POINTS = 100 
@@ -61,9 +70,9 @@ class AllInApp(App):
 
     def build(self):
         sm = ScreenManager()
-        sm.add_widget(StartPage(name="start_page", bg_path=paths.BG_PATH, font_path=paths.FONT_PATH))
-        sm.add_widget(GamePage(name="game_page", font_path=paths.FONT_PATH))
-        sm.add_widget(CustomPage(name="custom_page", font_path=paths.FONT_PATH))
+        sm.add_widget(StartPage(name="start_page", bg_path=paths.HOME_BG_PATH, font_path=paths.FONT_PATH))
+        sm.add_widget(GamePage(name="game_page", bg_path=paths.GAME_BG_PATH, font_path=paths.FONT_PATH))
+        sm.add_widget(CustomPage(name="custom_page", bg_path=paths.CUSTOM_BG_PATH ,font_path=paths.FONT_PATH))
         sm.add_widget(RoulettePage(name="roulette_page"))
         return sm
 

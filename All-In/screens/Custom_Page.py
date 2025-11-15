@@ -10,6 +10,7 @@ from kivy.uix.filechooser import FileChooserIconView
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.boxlayout import BoxLayout
 from kivy.graphics import Color, Line, Rectangle
+from kivy.core.window import Window
 from kivy.metrics import dp
 from kivy.uix.widget import Widget
 from kivy.core.text import Label as CoreLabel
@@ -32,53 +33,64 @@ def switch_screen(instance, manager, screen_name):
 
 
 class CustomPage(Screen):
-    def __init__(self, font_path, **kwargs):
+    def __init__(self, bg_path, font_path, **kwargs):
         super().__init__(**kwargs)
-        layout = FloatLayout()
+        self.bg_path = bg_path
+        self.font_path = font_path
 
-        # keep app instance available across methods
         self.app = App.get_running_app()
 
-        # --- Title label ---
-        titleLabel = Label(
-            text="CUSTOM",
-            font_size=32,
-            color=(1, 1, 1, 1),
-            pos_hint={'center_x': 0.1, 'center_y': 0.92},
-            font_name=font_path,
-        )
-        layout.add_widget(titleLabel)
+        # Create a layout and attach it
+        self.layout = FloatLayout()
+        self.add_widget(self.layout) 
 
-        # --- Sub-label ---
-        createQuestionLabel = Label(
-            text="Create Questions",
-            font_size=24,
-            color=(1, 1, 1, 1),
-            pos_hint={'center_x': 0.145, 'center_y': 0.83},
-            font_name=font_path,
-        )
-        layout.add_widget(createQuestionLabel)
+        self._build_background()
+        self._build_headers()
+        self._build_spinner()
+        self._build_inputs()
+        self._build_buttons()
 
-        # --- Spinner setup ---
+    # ---------------------------
+    # UI BUILDERS
+    # ---------------------------
+
+    def _build_background(self) -> None:
+        """Set the background image with transparency."""
+        with self.layout.canvas:
+            Color(1, 1, 1, 0.25)
+            self.bg_rect = Rectangle(source=self.bg_path, pos=(0, 0), size=Window.size)
+        Window.bind(on_resize=self.update_rect)
+
+
+    def _build_headers(self) -> None:
+        """Create static and dynamic labels."""
+
+        # --- Static labels ---
+        self.titleLabel = self.create_label("CUSTOM", {'center_x': 0.1, 'center_y': 0.92}, 32)
+        self.createQuestionLabel = self.create_label("Create Questions", {'center_x': 0.145, 'center_y': 0.83}, 24)
+        self.questionLabel = self.create_label("Question:", {'center_x': 0.093, 'center_y': 0.63}, 20)
+        self.answerLabel = self.create_label("Answer:", {'center_x': 0.087, 'center_y': 0.45}, 20)
+
+        # --- Dynamic labels ---
+        self.successLabel = self.create_label("", {'center_x': 0.8, 'center_y': 0.07}, 20)
+        self.importLabel = self.create_label("Import", {'center_x': 0.65, 'center_y': 0.83}, 24)
+        self.uploadStatusLabel = self.create_label("No files selected", {'center_x': 0.67, 'center_y': 0.6}, 16, auto_size=True)
+
+
+    def _build_spinner(self) -> None:
+        """Create question type spinner with border."""
         spinner_values = ("Short Answer", "Multiple Choice", "True/False")
-        spinner_text = "Short Answer"
+        self.spinner_text = "Short Answer"
 
-        def fit_spinner_width(texts, font_name, font_size=16, padding=40):
-            longest = max(texts, key=len)
-            label = CoreLabel(text=longest, font_name=font_name, font_size=font_size)
-            label.refresh()
-            text_width = label.texture.size[0]
-            return text_width + dp(padding)
-
-        spinner_width = fit_spinner_width(spinner_values + (spinner_text,), font_path)
+        spinner_width = self.fit_widget_width(spinner_values + (self.spinner_text,), self.font_path)
 
         self.questionTypeSpinner = Spinner(
-            text=spinner_text,
+            text=self.spinner_text,
             values=spinner_values,
             pos_hint={'center_x': 0.12, 'center_y': 0.73},
             size_hint=(None, None),
             size=(spinner_width, dp(32)),
-            font_name=font_path,
+            font_name=self.font_path,
             font_size=16,
             background_normal='',
             background_down='',
@@ -86,343 +98,214 @@ class CustomPage(Screen):
             color=(1, 1, 1, 1),
         )
 
-        # --- Spinner border (create empty line and update later) ---
-        with self.questionTypeSpinner.canvas.before:
-            Color(1, 1, 1, 1)
-            self._spinner_border = Line(width=1.5)
-
-        def _update_spinner_border(*_):
-            self._spinner_border.rectangle = (
-                self.questionTypeSpinner.x,
-                self.questionTypeSpinner.y,
-                self.questionTypeSpinner.width,
-                self.questionTypeSpinner.height,
-            )
-
-        self.questionTypeSpinner.bind(pos=_update_spinner_border, size=_update_spinner_border)
-        _update_spinner_border()
-        layout.add_widget(self.questionTypeSpinner)        
-
-        # --- Question label ---
-        questionLabel = Label(
-            text="Question:",
-            font_size=20,
-            color=(1, 1, 1, 1),
-            pos_hint={'center_x': 0.085, 'center_y': 0.63},
-            font_name=font_path,
-        )
-        layout.add_widget(questionLabel)
-
-        # --- Calculate input size based on hint text ---
-        questionInput_hint_text = "Enter question here..."
-        questionInputLabel = CoreLabel(text=questionInput_hint_text, font_name=font_path, font_size=16)
-        questionInputLabel.refresh()
-        text_width, text_height = questionInputLabel.texture.size
-
-        questionInput_width = text_width + dp(100)   # add padding
-        questionInput_height = text_height + dp(12) # add vertical padding
-
-        # --- Text input box ---
-        self.questionInput = TextInput(
-            hint_text=questionInput_hint_text,
-            multiline=False,
-            size_hint=(None, None),
-            size=(questionInput_width, questionInput_height),
-            pos_hint={'center_x': 0.185, 'center_y': 0.56},
-            background_normal='',
-            background_active='',
-            background_color=(0, 0, 0, 0),   # transparent
-            foreground_color=(1, 1, 1, 1),   # white text
-            cursor_color=(1, 1, 1, 1),
-            hint_text_color=(1, 1, 1, 0.4),
-            font_name=font_path,
-            font_size=16,
-        )
-
-
-        with self.questionInput.canvas.before:
-            Color(1, 1, 1, 1)
-            self._question_input_border = Line(width=1.5)
-
-        def _update_questionInput_border(*_):
-            self._question_input_border.rectangle = (
-                self.questionInput.x,
-                self.questionInput.y,
-                self.questionInput.width,
-                self.questionInput.height,
-            )
-
-        self.questionInput.bind(pos=_update_questionInput_border, size=_update_questionInput_border)
-        _update_questionInput_border()
-        self.questionInput.bind(focus=self.clear_success_label)
-        layout.add_widget(self.questionInput)
-
-        # --- Answer label ---
-        answerLabel = Label(
-            text="Answer:",
-            font_size=20,
-            color=(1, 1, 1, 1),
-            pos_hint={'center_x': 0.075, 'center_y': 0.45},
-            font_name=font_path,
-        )
-        layout.add_widget(answerLabel)
-
-        # --- Answer input box ---
-        answerInput_hint_text = "Enter answer here..."
-        answerInputLabel = CoreLabel(text=answerInput_hint_text, font_name=font_path, font_size=16)
-        answerInputLabel.refresh()
-        text_width, text_height = answerInputLabel.texture.size
-
-        answerInput_width = text_width + dp(100)   # add padding
-        answerInput_height = text_height + dp(12) # add vertical padding
-
-        self.answerInput = TextInput(
-            hint_text=answerInput_hint_text,
-            multiline=False,
-            size_hint=(None, None),
-            size=(answerInput_width, answerInput_height),
-            pos_hint={'center_x': 0.18, 'center_y': 0.38},
-            background_normal='',
-            background_active='',
-            background_color=(0, 0, 0, 0),   # transparent
-            foreground_color=(1, 1, 1, 1),   # white text
-            cursor_color=(1, 1, 1, 1),
-            hint_text_color=(1, 1, 1, 0.4),
-            font_name=font_path,
-            font_size=16,
-        )
-
-        with self.answerInput.canvas.before:
-            Color(1, 1, 1, 1)
-            self._answer_input_border = Line(width=1.5)
-
-
-        def _update_answerInput_border(*_):
-            self._answer_input_border.rectangle = (
-                self.answerInput.x,
-                self.answerInput.y,
-                self.answerInput.width,
-                self.answerInput.height,
-            )
-
-        self.answerInput.bind(pos=_update_answerInput_border, size=_update_answerInput_border)
-        self.answerInput.bind(focus=self.clear_success_label)
-        _update_answerInput_border()
-        # --- Container to hold answer inputs dynamically ---
-        self.answer_container = FloatLayout()
-        layout.add_widget(self.answer_container)
-
-        self.answer_container.add_widget(self.answerInput)
-
-        self.update_answer_inputs(self.questionTypeSpinner, spinner_text)
-
-
-        # Bind spinner event
+        self.add_border(self.questionTypeSpinner)
+        self.layout.add_widget(self.questionTypeSpinner)
         self.questionTypeSpinner.bind(text=self.update_answer_inputs)
 
-        # --- Create button label to auto-fit size ---
-        save_question_text = "Save Question"
-        saveQuestionLabel = CoreLabel(text=save_question_text, font_name=font_path, font_size=16)
-        saveQuestionLabel.refresh()
-        text_width, text_height = saveQuestionLabel.texture.size
 
-        save_question_btn_width = text_width + dp(60)   # horizontal padding
-        save_question_btn_height = text_height + dp(12) # vertical padding
+    def _build_inputs(self) -> None:
+        """Create question and answer inputs and dynamic container."""
+        # Question input
+        self.questionInput = self.create_text_input("Enter question here...", {'center_x': 0.185, 'center_y': 0.56})
+        self.layout.add_widget(self.questionInput)
 
-        # --- Button with white background and black text (no border) ---
-        save_question_btn = Button(
-            text=save_question_text,
-            size_hint=(None, None),
-            size=(save_question_btn_width, save_question_btn_height),
-            pos_hint={'center_x': 0.128, 'center_y': 0.2},
-            background_normal='',
-            background_down='',
-            background_color=(1, 1, 1, 1),  # white background
-            color=(0, 0, 0, 1),             # black text
-            font_name=font_path,
-            font_size=16,
-        )
+        # Answer input
+        self.answerInput = self.create_text_input("Enter answer here...", {'center_x': 0.18, 'center_y': 0.38})
 
-        def on_save_question(instance):
+        # Container for dynamic answer inputs
+        self.answer_container = FloatLayout()
+        self.layout.add_widget(self.answer_container)
+        self.answer_container.add_widget(self.answerInput)
 
-            # --- Update Fields and States ---
+        # Initialize dynamic inputs for spinner selection
+        self.update_answer_inputs(self.questionTypeSpinner, self.spinner_text)
 
+
+    def _build_buttons(self) -> None:
+        """Create all main buttons with optional borders."""
+
+        # --- Save Question Button ---
+        def on_save(instance):
             if self.questionTypeSpinner.text in ["Short Answer", "True/False"]:
-
-                if self.questionInput.text == "" or self.answerInput.text == "":
+                if not self.questionInput.text or not self.answerInput.text:
+                    self.successLabel.text = "Please fill in all fields."
+                    return
+            elif self.questionTypeSpinner.text == "Multiple Choice":
+                if not self.questionInput.text or any(not i.text.strip() for i in self.answer_inputs):
                     self.successLabel.text = "Please fill in all fields."
                     return
 
-            if self.questionTypeSpinner.text == "Multiple Choice":
-
-                if self.questionInput.text == "" or any(not i.text.strip() for i in self.answer_inputs):
-                    self.successLabel.text = "Please fill in all fields."
-                    return
-
-
-            # --- Save Question to JSON ---
             question_type = self.questionTypeSpinner.text
             question = self.questionInput.text
 
-            if self.questionTypeSpinner.text == "Multiple Choice":
+            if question_type == "Multiple Choice":
                 initial_choices = [i.text.strip() for i in self.answer_inputs if i.text.strip()]
                 answer = initial_choices[0] if initial_choices else ""
                 choices = [random.sample(initial_choices, len(initial_choices))]
-
                 for input_box in self.answer_inputs:
                     input_box.text = ""
-
-            elif self.questionTypeSpinner.text == "True/False":
+            elif question_type == "True/False":
                 answer = self.answer_dropdown.text if self.answer_dropdown.text != "Select Answer" else ""
                 choices = ["True", "False"]
             else:
                 answer = self.answerInput.text.strip()
                 choices = None
 
-            try:
-                with open(self.app.QUESTIONS_JSON_PATH, 'r') as file:
-                    data = json.load(file)
-            except (FileNotFoundError, json.JSONDecodeError):
-                data = []  
-
-            new_question = {
-                "question_type": question_type,
-                "question": question,
-                "answer": answer,
-                "choices": choices
-            }
-
-            data.append(new_question)
-
-            with open(self.app.QUESTIONS_JSON_PATH, 'w') as file:
-                json.dump(data, file, indent=4)
+            data = self.load_questions_data()
+            data.append({"question_type": question_type, "question": question, "answer": answer, "choices": choices})
+            self.save_questions_data(data)
 
             self.app.load_questions()
-
-            self.answerInput.text = ""
             self.questionInput.text = ""
+            self.answerInput.text = ""
             self.successLabel.text = "Question successfully saved!"
 
-
-        save_question_btn.bind(on_release=on_save_question)
-        layout.add_widget(save_question_btn)
-
-        # --- Success label ---
-        self.successLabel = Label(
-            text="",
-            font_size=20,
-            color=(1, 1, 1, 1),
-            pos_hint={'center_x': 0.8, 'center_y': 0.07},
-            font_name=font_path,
-        )
-        layout.add_widget(self.successLabel)
-
-        # --- Sub-label ---
-        importLabel = Label(
-            text="Import",
-            font_size=24,
-            color=(1, 1, 1, 1),
-            pos_hint={'center_x': 0.65, 'center_y': 0.83},
-            font_name=font_path,
-        )
-        layout.add_widget(importLabel)
+        self.create_button("saveQuestionBtn", "Save Question", {'center_x': 0.128, 'center_y': 0.2}, on_release=on_save)
 
         # --- Upload PDF Button ---
-        show_filechooser_btn = Button(
-            text="Upload PDF",
-            size_hint=(None, None),
-            size=(dp(125), dp(35)),
-            pos_hint={'center_x': 0.68, 'center_y': 0.74},
-            background_normal='',
-            background_down='',
-            background_color=(0, 0, 0, 0),  # transparent
-            color=(1, 1, 1, 1),             # white text
-            font_size=16,
-            font_name=font_path
-        )
-
-        # --- White border for upload button (create line and update) ---
-        with show_filechooser_btn.canvas.before:
-            Color(1, 1, 1, 1)
-            self._upload_btn_border = Line(width=1.5)
-
-        def _update_upload_btn_border(*_):
-            self._upload_btn_border.rectangle = (
-                show_filechooser_btn.x,
-                show_filechooser_btn.y,
-                show_filechooser_btn.width,
-                show_filechooser_btn.height
-            )
-
-        show_filechooser_btn.bind(pos=_update_upload_btn_border, size=_update_upload_btn_border)
-        _update_upload_btn_border()
-        show_filechooser_btn.bind(on_release=self.open_file_chooser)
-        layout.add_widget(show_filechooser_btn)
-
-        self.upload_status_label = Label(
-            text="No files selected",
-            font_size=16,
-            color=(1, 1, 1, 1),
-            pos_hint={'center_x': 0.67, 'center_y': 0.6},
-            font_name=font_path,
-            size_hint=(None, None),
-        )
-        # Measure text size dynamically
-        self.upload_status_label.texture_update()
-        self.upload_status_label.width = self.upload_status_label.texture_size[0] + dp(10)  # add small padding
-        self.upload_status_label.height = self.upload_status_label.texture_size[1]
-        self.upload_status_label.halign = "left"
-        self.upload_status_label.valign = "middle"
-        layout.add_widget(self.upload_status_label)
+        self.create_button("uploadBtn", "Upload PDF", {'center_x': 0.68, 'center_y': 0.74},
+                        bg_color=(0, 0, 0, 0), text_color=(1, 1, 1, 1), on_release=self.open_file_chooser)
 
         # --- Show Questions Button ---
-        show_questions_btn = Button(
-            text="Show Questions",
+        self.create_button("showQuestionsBtn", "Show Questions", {'center_x': 0.7, 'center_y': 0.35},
+                        bg_color=(0, 0, 0, 0), text_color=(1, 1, 1, 1), on_release=self.show_questions_popup)
+
+        # --- Back Button (no border) ---
+        self.create_button("backBtn", "Back", {'x': 0.035, 'y': 0.05}, font_size=28, width_padding=0, height_padding=0,
+                        bg_color=(0, 0, 0, 0), text_color=(1, 1, 1, 1), auto_size=True,
+                        on_release=lambda inst: switch_screen(inst, self.manager, "start_page"),
+                        add_border_flag=False)
+
+
+    # ---------------------------
+    # HELPER FUNCTIONS
+    # ---------------------------
+
+    def create_label(self, text, pos_hint=None, font_size=20, color=(1,1,1,1), auto_size=False):
+        """Create a Label, optionally auto-size, and add to layout."""
+        label = Label(text=text, font_size=font_size, color=color, font_name=self.font_path, pos_hint=pos_hint)
+        self.layout.add_widget(label)
+
+        if auto_size:
+            label.size_hint = (None, None)
+            label.texture_update()
+            label.width = label.texture_size[0] + dp(10)
+            label.height = label.texture_size[1]
+            label.halign = "left"
+            label.valign = "middle"
+        return label
+
+
+    def create_text_input(self, hint_text, pos_hint):
+        """Create a bordered TextInput and bind focus clearing."""
+        label = CoreLabel(text=hint_text, font_name=self.font_path, font_size=16)
+        label.refresh()
+        width, height = label.texture.size
+        width += dp(100)
+        height += dp(12)
+
+        ti = TextInput(
+            hint_text=hint_text,
+            multiline=False,
             size_hint=(None, None),
-            size=(dp(125), dp(35)),
-            pos_hint={'center_x': 0.68, 'center_y': 0.35},
+            size=(width, height),
+            pos_hint=pos_hint,
+            background_normal='',
+            background_active='',
+            background_color=(0,0,0,0),
+            foreground_color=(1,1,1,1),
+            cursor_color=(1,1,1,1),
+            hint_text_color=(1,1,1,0.4),
+            font_name=self.font_path,
+            font_size=16,
+        )
+
+        self.add_border(ti)
+        ti.bind(focus=self.clear_success_label)
+        return ti
+
+
+    def create_button(self, attr_name, text, pos_hint=None, font_size=16, width_padding=60, height_padding=12,
+                    bg_color=(1,1,1,1), text_color=(0,0,0,1), auto_size=True, on_release=None,
+                    add_border_flag=True):
+        """Create a Button with optional border."""
+        if auto_size:
+            label = CoreLabel(text=text, font_name=self.font_path, font_size=font_size)
+            label.refresh()
+            btn_width = label.texture.size[0] + dp(width_padding)
+            btn_height = label.texture.size[1] + dp(height_padding)
+        else:
+            btn_width, btn_height = dp(125), dp(35)
+
+        btn = Button(
+            text=text,
+            size_hint=(None, None),
+            size=(btn_width, btn_height),
+            pos_hint=pos_hint,
             background_normal='',
             background_down='',
-            background_color=(0, 0, 0, 0),  # transparent
-            color=(1, 1, 1, 1),             # white text
-            font_size=16,
-            font_name=font_path
+            background_color=bg_color,
+            color=text_color,
+            font_name=self.font_path,
+            font_size=font_size,
         )
 
-        # --- White border for show questions button ---
-        with show_questions_btn.canvas.before:
-            Color(1, 1, 1, 1)
-            self._show_btn_border = Line(width=1.5)
+        if on_release:
+            btn.bind(on_release=on_release)
 
-        def _update_show_btn_border(*_):
-            self._show_btn_border.rectangle = (
-                show_questions_btn.x,
-                show_questions_btn.y,
-                show_questions_btn.width,
-                show_questions_btn.height
-            )
+        self.layout.add_widget(btn)
+        setattr(self, attr_name, btn)
+        if add_border_flag:
+            self.add_border(btn)
+        return btn
 
-        show_questions_btn.bind(pos=_update_show_btn_border, size=_update_show_btn_border)
-        _update_show_btn_border()
-        # show questions should open the questions popup, not file chooser
-        show_questions_btn.bind(on_release=self.show_questions_popup)
-        layout.add_widget(show_questions_btn)
 
-        # --- Back button ---
-        back_btn = Button(
-            text="Back",
-            size=(120, 50),
-            size_hint=(None, None),
-            pos_hint={'x': 0.02, 'y': 0.02},
-            background_normal='',
-            background_color=(0, 0, 0, 0),
-            font_name=font_path,
-            font_size=28,
-        )
-        back_btn.bind(on_release=lambda instance: switch_screen(instance, self.manager, "start_page"))
-        layout.add_widget(back_btn)
+    def add_border(self, widget, color=(1,1,1,1), width=1.5):
+        """Add a rectangle border to a widget and update on resize/move."""
+        with widget.canvas.before:
+            Color(*color)
+            widget.border_line = Line(width=width)
 
-        self.add_widget(layout)
+        def update(*_):
+            widget.border_line.rectangle = (widget.x, widget.y, widget.width, widget.height)
+
+        widget.bind(pos=update, size=update)
+        update()
+
+
+    def fit_widget_width(self, texts, font_name, font_size=16, padding=40):
+        """Calculate dp width to fit the longest text."""
+        longest = max(texts, key=len)
+        label = CoreLabel(text=longest, font_name=font_name, font_size=font_size)
+        label.refresh()
+        return label.texture.size[0] + dp(padding)
+
+
+    def load_questions_data(self):
+        """Load JSON questions safely."""
+        try:
+            with open(self.app.QUESTIONS_JSON_PATH, 'r') as f:
+                return json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return []
+
+
+    def save_questions_data(self, data):
+        """Save JSON questions."""
+        with open(self.app.QUESTIONS_JSON_PATH, 'w') as f:
+            json.dump(data, f, indent=4)
+
+
+    # ---------------------------
+    # EVENTS
+    # ---------------------------
+
+    def update_rect(self, instance, width, height):
+        self.bg_rect.size = (width, height)
+
+    # ---------------------------
+    # HELPERS
+    # ---------------------------
 
     def normalize_text(self, s):
         if not s:
@@ -711,12 +594,32 @@ class CustomPage(Screen):
         popup.open()
 
     def files_chosen(self, filepaths):
-        self.upload_status_label.text = "Selected files:\n" + "\n".join(filepaths)
-
         if not filepaths:
             print("No file selected.")
             return
 
+        # -------------------------------
+        # Load existing questions FIRST
+        # -------------------------------
+        try:
+            with open(self.app.QUESTIONS_JSON_PATH, 'r', encoding='utf-8') as f:
+                existing_data = json.load(f)
+        except:
+            existing_data = []
+
+        # Build a fast lookup set for duplicate detection
+        # normalized questions only
+        existing_questions_set = {
+            self.normalize_text(q["question"]).lower()
+            for q in existing_data
+            if "question" in q
+        }
+
+        all_pdf_text = ""
+
+        # -------------------------------
+        # Read each PDF
+        # -------------------------------
         for filepath in filepaths:
             if not filepath.lower().endswith(".pdf"):
                 print(f"Skipped non-PDF file: {filepath}")
@@ -724,69 +627,83 @@ class CustomPage(Screen):
 
             try:
                 doc = fitz.open(filepath)
-                text = ""
+                extracted = ""
+
                 for page in doc:
-                    text += page.get_text("text")
+                    txt = page.get_text("text")
+                    if txt.strip():
+                        extracted += txt + "\n"
+
                 doc.close()
-
-                print(f"\n--- PDF Content ({filepath}) ---\n")
-
-                # Normalize newlines (handles both \n and \r\n)
-                normalized_text = text.strip().replace("\r\n", "\n")
-
-                # Use regex to find all Question + Answer pairs
-                pattern = r"Question\s*\d*:\s*(.*?)\nAnswer:\s*(.*?)(?=\nQuestion|\Z)"
-                matches = re.findall(pattern, normalized_text, flags=re.DOTALL)
-
-                for question_text, answer_block in matches:
-
-                    # Normalize text BEFORE using it
-                    question = self.normalize_text(question_text)
-
-                    # Split answers then normalize each one
-                    split_answers = [self.normalize_text(a) for a in answer_block.split(',')]
-
-                    answer = split_answers[0]  # correct answer is always first
-
-                    # Determine question type
-                    if len(split_answers) > 1:
-                        question_type = "Multiple Choice"
-                        choices = [random.sample(split_answers, len(split_answers))]
-
-                    elif answer in ["True", "False"]:
-                        question_type = "True/False"
-                        choices = ["True", "False"]
-
-                    else:
-                        question_type = "Short Answer"
-                        choices = None
-
-                    try:
-                        with open(self.app.QUESTIONS_JSON_PATH, 'r') as file:
-                            data = json.load(file)
-                    except (FileNotFoundError, json.JSONDecodeError):
-                        data = []  
-
-                    new_question = {
-                        "question_type": question_type,
-                        "question": question,
-                        "answer": answer,
-                        "choices": choices
-                    }
-
-                    data.append(new_question)
-
-                    with open(self.app.QUESTIONS_JSON_PATH, 'w') as file:
-                        json.dump(data, file, indent=4)
-
-                self.app.load_questions()
-
-                # Show results in console
-                for q in self.app.QUESTIONS:
-                    print(q)
+                all_pdf_text += extracted + "\n"
 
             except Exception as e:
                 print(f"Error reading {filepath}: {e}")
+
+        # Normalize text
+        all_pdf_text = all_pdf_text.replace("\r\n", "\n").strip()
+
+        # -------------------------------------------------------
+        # Extract all Question + Answer blocks from the PDF text
+        # -------------------------------------------------------
+        pattern = r"Question\s*\d*:\s*(.*?)\nAnswer:\s*(.*?)(?=\nQuestion|\Z)"
+        matches = re.findall(pattern, all_pdf_text, flags=re.DOTALL)
+
+        new_questions_added = 0
+
+        # -------------------------------
+        # Process each extracted QA block
+        # -------------------------------
+        for question_text, answer_block in matches:
+
+            cleaned_q = self.normalize_text(question_text).lower()
+
+            # Skip duplicates
+            if cleaned_q in existing_questions_set:
+                print(f"Skipped duplicate: {question_text}")
+                continue
+
+            # Process answers
+            answers = [self.normalize_text(a) for a in answer_block.split(",") if a.strip()]
+            answer = answers[0]
+
+            # Determine question type
+            if len(answers) > 1:
+                qtype = "Multiple Choice"
+                choices = answers[:]      # copy list
+                random.shuffle(choices)   # shuffle the MCQs
+            elif answer in ("True", "False"):
+                qtype = "True/False"
+                choices = ["True", "False"]
+            else:
+                qtype = "Short Answer"
+                choices = None
+
+            # Append NEW question only
+            new_item = {
+                "question_type": qtype,
+                "question": self.normalize_text(question_text),
+                "answer": answer,
+                "choices": [choices] if choices else [None]
+            }
+
+            existing_data.append(new_item)
+            existing_questions_set.add(cleaned_q)
+            new_questions_added += 1
+
+        # -------------------------------
+        # Save updated questions.json
+        # -------------------------------
+        with open(self.app.QUESTIONS_JSON_PATH, 'w', encoding='utf-8') as f:
+            json.dump(existing_data, f, indent=4, ensure_ascii=False)
+
+        # Refresh app data
+        self.app.load_questions()
+
+        print(f"Imported {new_questions_added} new unique questions.")
+        print("Total questions:", len(existing_data))
+
+
 
 
 # --------- File Chooser Popup -------------
