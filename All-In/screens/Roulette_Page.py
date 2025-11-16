@@ -79,6 +79,7 @@ class RoulettePage(Screen):
             self.ui_built = True
 
         # Set balance
+
         self.initial_balance = self.app.POINTS
         self.ids_main_ui.balance = self.initial_balance
 
@@ -123,7 +124,10 @@ class RoulettePage(Screen):
     # ----------------------------
     def collect_and_exit(self):
         ui = self.ids_main_ui
-        self.app.POINTS = ui.balance
+        if ui.balance >= 0:  # won
+            self.app.POINTS += ui.balance * self.app.MULTIPLIER
+        else:  # lost
+            self.app.POINTS += ui.balance  # maybe don't multiply?
         pygame.mixer.music.stop()
         self.manager.current = "game_page"
 
