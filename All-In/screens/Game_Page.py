@@ -453,9 +453,7 @@ class GamePage(Screen):
         
         try:
             if hasattr(self.app, "WRONG"):
-                print("SFX should play NOW:", time.time())
                 pygame.mixer.Sound(self.app.WRONG).play()
-                print("After play:", time.time())
         except Exception as e:
             print("Failed to play WRONG sound:", e)
 
