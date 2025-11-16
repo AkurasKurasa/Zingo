@@ -43,7 +43,7 @@ class GamePage(Screen):
                 valign='middle',
                 size_hint=(1, 1),
             )
-            # This ensures the text is aligned properly within its box
+            # Align text 
             lbl.bind(size=lambda instance, value: setattr(instance, 'text_size', (instance.width, instance.height)))
             return lbl
 
@@ -53,7 +53,7 @@ class GamePage(Screen):
         self.required_label = make_label("Required: 1,000,000", "left")
         self.questions_label = make_label("Questions: 1/100", "right")
 
-        # --- Add them to the grid ---
+        # --- Add to grid ---
         top_grid.add_widget(self.points_label)
         top_grid.add_widget(self.multiplier_label)
         top_grid.add_widget(self.required_label)
@@ -178,22 +178,33 @@ class GamePage(Screen):
             self.update_middle_layout(question_type, answer, choices)
 
     def submit_answer(self, instance, answer, correct_answer):
+        # normalise
+        user = answer.strip().lower()
+        correct = correct_answer.strip().lower()
+        is_correct = (user == correct)
 
-        if answer == correct_answer:
+        if is_correct:
             print("Hooray!")
 
-            self.app.QUESTION_INDEX += 1
-            self.app.POINTS += 1
-            self.app.MULTIPLIER += 0.05
+            # ---- update stats ----
             self.app.QUESTIONS_IN_A_ROW += 1
+            points_earned = int(10 * self.app.MULTIPLIER)
+            self.app.POINTS += points_earned
+            self.app.MULTIPLIER += 0.05
+            self.app.QUESTION_INDEX += 1
 
-            if self.app.QUESTIONS_IN_A_ROW >= 5:
-                self.manager.current = "roulette_page"
-                return 
-            
+            # ---- every 5 in a row → roulette ----
+            if self.app.QUESTIONS_IN_A_ROW % 5 == 0:
+                self.app.root.get_screen('roulette_page').start_roulette()
+                return
+
             self.next_question()
+
         else:
             print("Womp womp nigga")
+            self.app.QUESTIONS_IN_A_ROW = 0          # reset streak
+            self.app.MULTIPLIER = 1.0                
+            self.next_question()
 
     def make_option_button(self, text, font_path):
         btn = Button(
@@ -212,6 +223,6 @@ class GamePage(Screen):
         with widget.canvas.before:
             Color(1,1,1,1)
             border = Line(rectangle=(widget.x, widget.y, widget.width, widget.height), width=1.5)
-        # Update border on move/resize
+    
         widget.bind(pos=lambda instance, val, b=border: setattr(b, 'rectangle', (instance.x, instance.y, instance.width, instance.height)))
         widget.bind(size=lambda instance, val, b=border: setattr(b, 'rectangle', (instance.x, instance.y, instance.width, instance.height)))

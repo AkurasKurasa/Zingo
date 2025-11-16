@@ -1,7 +1,4 @@
-from kivy.config import Config
-Config.set('graphics', 'width', '1200')
-Config.set('graphics', 'height', '800')
-
+# screens/roulette_kivy.py
 import os
 import random
 import math
@@ -28,7 +25,7 @@ from PIL import Image, ImageDraw, ImageFont
 from kivy.core.image import Image as CoreImage
 from paths import FONT_PATH
 
-# ---- config ----
+# --- config ---
 LOGO_PATH = "All-In/png_icons/allin_roulette_center.png"
 PIXEL_FONT_NAME = "PixelFont"
 try:
@@ -52,8 +49,7 @@ BLACK_SET = set(NUMBERS) - RED_SET
 PAYOUT_NUMBER = 10
 PAYOUT_COLOR = 2
 
-
-# ---- wheel image (no hub) ----
+# --- wheel image (no hub) ---
 def draw_wheel_image(angle_deg: float, size_px: int = 700, highlight: int = None):
     im = Image.new("RGBA", (size_px, size_px), (0, 0, 0, 0))
     draw = ImageDraw.Draw(im)
@@ -62,7 +58,7 @@ def draw_wheel_image(angle_deg: float, size_px: int = 700, highlight: int = None
 
     draw.ellipse((cx - radius - 8, cy - radius - 8,
                   cx + radius + 8, cy + radius + 8),
-                  fill=(20, 20, 20), outline=(50, 50, 50))
+                 fill=(20, 20, 20), outline=(50, 50, 50))
 
     for i, n in enumerate(NUMBERS):
         start = i * SLICE_ANGLE + angle_deg
@@ -98,16 +94,14 @@ def draw_wheel_image(angle_deg: float, size_px: int = 700, highlight: int = None
 
     return im
 
-
-# ---- winning number (bottom pointer) ----
+# --- winning number (bottom pointer) ---
 def compute_winning_number(final_angle: float):
     a = final_angle % 360.0
     rel = (270.0 - a) % 360.0
     idx = int(rel // SLICE_ANGLE) % SEG_COUNT
     return NUMBERS[idx]
 
-
-# ---- wheel widget ----
+# --- wheel widget ---
 class WheelWidget(Widget):
     angle = NumericProperty(0.0)
     highlight = NumericProperty(None, allownone=True)
@@ -118,16 +112,12 @@ class WheelWidget(Widget):
         super().__init__(**kwargs)
         self.size_px = 700
 
-        # load logo
         if os.path.exists(LOGO_PATH):
             try:
                 img = CoreImage(LOGO_PATH)
                 self.logo_texture = img.texture
-                print(f"Logo loaded: {LOGO_PATH}")
             except Exception as e:
-                print(f"Logo error: {e}")
-        else:
-            print(f"Logo not found: {LOGO_PATH}")
+                print(f"logo error: {e}")
 
         self.bind(pos=self._redraw, size=self._redraw,
                   angle=self._redraw, highlight=self._redraw,
@@ -135,7 +125,6 @@ class WheelWidget(Widget):
         Clock.schedule_once(lambda dt: self._redraw(), 0.05)
 
     def _redraw(self, *a):
-        # ---- wheel image ------------------------------------------------
         pil = draw_wheel_image(self.angle, size_px=self.size_px, highlight=self.highlight)
         data = pil.tobytes()
         w, h = pil.size
@@ -144,68 +133,45 @@ class WheelWidget(Widget):
             self._tex.flip_vertical()
         self._tex.blit_buffer(data, colorfmt='rgba', bufferfmt='ubyte')
 
-        # ---- canvas -----------------------------------------------------
         self.canvas.clear()
         with self.canvas:
-            # WHEEL
             Color(1, 1, 1, 1)
             Rectangle(texture=self._tex, pos=self.pos, size=self.size)
 
-            # LOGO 
             if self.logo_texture:
                 cx, cy = self.center_x, self.center_y
-                radius = int(self.size_px * 0.05)  # 5% of wheel
-
+                radius = int(self.size_px * 0.05)
                 from kivy.graphics import StencilPush, StencilUse, StencilUnUse, StencilPop, Ellipse
-
                 StencilPush()
                 Ellipse(pos=(cx - radius, cy - radius), size=(radius*2, radius*2))
                 StencilUse()
-
                 logo_sz = radius * 2
-                logo_x = cx - logo_sz // 2
-                logo_y = cy - logo_sz // 2
                 Rectangle(texture=self.logo_texture,
-                          pos=(logo_x, logo_y),
+                          pos=(cx - logo_sz//2, cy - logo_sz//2),
                           size=(logo_sz, logo_sz))
-
                 StencilUnUse()
                 StencilPop()
 
-            # 8-bit yellow arrow 
             top = self.top
-            
-            arrow = [
-                [0,0,1,0,0],
-                [0,1,1,1,0],
-                [1,1,1,1,1],
-                [0,0,1,0,0],
-                [0,0,1,0,0],
-            ]
-
+            arrow = [[0,0,1,0,0],[0,1,1,1,0],[1,1,1,1,1],[0,0,1,0,0],[0,0,1,0,0]]
             scale = 7
             w_a = len(arrow[0]) * scale
             h_a = len(arrow) * scale
             ox = cx - w_a // 2
-            
-            oy = top - h_a - 8 
+            oy = top - h_a - 8
 
             Color(0, 0, 0, 0.6)
             for y, row in enumerate(arrow):
                 for x, p in enumerate(row):
                     if p:
-                        Rectangle(pos=(ox + x*scale + 2, oy + y*scale + 2),
-                                size=(scale, scale))
-
+                        Rectangle(pos=(ox + x*scale + 2, oy + y*scale + 2), size=(scale, scale))
             Color(1.0, 0.9, 0.2, 1)
             for y, row in enumerate(arrow):
                 for x, p in enumerate(row):
                     if p:
-                        Rectangle(pos=(ox + x*scale, oy + y*scale),
-                                size=(scale, scale))
+                        Rectangle(pos=(ox + x*scale, oy + y*scale), size=(scale, scale))
 
-
-# ---- KV layout ----
+# --- kv layout ---
 KV = '''
 <MainUI>:
     orientation: 'horizontal'
@@ -217,11 +183,9 @@ KV = '''
         Rectangle:
             pos: self.pos
             size: self.size
-    
-    # 1. LEFT SIDE (WHEEL) - FILL REMAINING SPACE
     BoxLayout:
         orientation: 'vertical'
-        size_hint_x: 1  # <--- CHANGED: Takes 100% of remaining space
+        size_hint_x: 0.6
         padding: 8
         spacing: 8
         Label:
@@ -249,7 +213,6 @@ KV = '''
                 background_color: 0.07, 0.07, 0.08, 1
                 foreground_color: 1, 1, 1, 1
                 cursor_color: 1, 1, 1, 1
-
             Button:
                 text: "Place Number Bet"
                 font_name: "PixelFont"
@@ -266,12 +229,9 @@ KV = '''
                 background_color: 1.0, 0.4, 0.1, 1
                 color: 1, 1, 1, 1
                 on_release: root.clear_last_bet()
-    
-    # 2. RIGHT SIDE (CONTROLS) - FIXED WIDTH
     BoxLayout:
         orientation: 'vertical'
-        size_hint_x: None  # <--- CHANGED: Fixed width container
-        width: 380         # <--- ADDED: Explicit fixed width (adjust as needed)
+        size_hint_x: 0.4
         padding: 8
         spacing: 8
         BoxLayout:
@@ -334,12 +294,13 @@ KV = '''
                 on_release: root.place_color_bet('even')
         GridLayout:
             id: num_grid
-            cols: 3
+            cols: 4          # ← CHANGED FROM 3 TO 4
+            rows: 3          # ← NEW: explicit 3 rows
             spacing: 6
-            size_hint_y: 0.6
-            row_default_height: 56
+            size_hint_y: 0.5
+            row_default_height: 50
             row_force_default: True
-            col_default_width: 80
+            col_default_width: 70
             col_force_default: True
             padding: 4
         BoxLayout:
@@ -370,7 +331,7 @@ KV = '''
                 font_size: '14sp'
                 size_hint_y: None
                 height: 20
-            ScrollView:  # <--- Ensured this is correct (capital V)
+            ScrollView:
                 size_hint_y: None
                 height: 40
                 do_scroll_x: False
@@ -384,8 +345,7 @@ KV = '''
                     text_size: self.width, None
 '''
 
-
-# ---- main UI ----
+# --- main ui ---
 class MainUI(BoxLayout):
     balance = NumericProperty(STARTING_BALANCE)
     bet_amount = NumericProperty(BET_DEFAULT)
@@ -393,7 +353,6 @@ class MainUI(BoxLayout):
     last_result = StringProperty("Place your bets!")
     history_text = StringProperty("")
     spinning = BooleanProperty(False)
-    on_exit_roulette_event = ObjectProperty(None) # UPDATED: Added property for parent screen
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -537,13 +496,11 @@ class MainUI(BoxLayout):
         self.wheel_widget.highlight = None
         self.wheel_widget._redraw()
 
-
-# ---- app ----
+# --- app ---
 class RouletteApp(App):
     def build(self):
         Builder.load_string(KV)
         return MainUI()
-
 
 if __name__ == "__main__":
     RouletteApp().run()

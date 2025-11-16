@@ -17,7 +17,7 @@ class StartPage(Screen):
 
         # Background
         with layout.canvas:
-            Color(0.3, 0, 0.5, 0.9)
+            Color(0.2, 0, 0.7, 0.9)
             self.bg_rect = Rectangle(source=bg_path, pos=(0, 0), size=Window.size)
         Window.bind(on_resize=self.update_rect)
 
