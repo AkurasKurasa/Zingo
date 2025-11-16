@@ -6,6 +6,7 @@ from kivy.uix.screenmanager import Screen
 from kivy.graphics import Rectangle, Color
 from kivy.core.window import Window
 from kivy.app import App
+from kivy.uix.image import Image
 
 
 class StartPage(Screen):
@@ -30,21 +31,22 @@ class StartPage(Screen):
     def _add_background(self):
         """Add and auto-resize background image."""
         with self.layout.canvas:
-            Color(0.3, 0.2, 0.6, 0.8)
+            Color(0.5, 0.5, 0.5, 0.8)
             self.bg_rect = Rectangle(source=self.bg_path, size=Window.size, pos=(0, 0))
 
         Window.bind(on_resize=self._update_bg_size)
 
     def _add_title(self):
-        """Add main title label."""
-        title = Label(
-            text="All-In",
-            font_size=81,
-            color=(1, 1, 1, 1),
-            pos_hint={'center_x': 0.5, 'top': 1.15},
-            font_name=self.font_path
+        """Add main title image, centered horizontally and vertically."""
+        title_image = Image(
+            source='png_icons/allintitle.png',
+            size_hint=(0.8, 0.4),
+            # Centered 
+            pos_hint={'center_x': 0.5, 'center_y': 0.60},
+            allow_stretch=True,
+            keep_ratio=True
         )
-        self.layout.add_widget(title)
+        self.layout.add_widget(title_image)
 
     def _add_buttons(self):
         """Create and place Start, Custom, Quit buttons."""

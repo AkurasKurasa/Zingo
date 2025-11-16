@@ -5,9 +5,9 @@ import os
 BASE_DIR = os.path.dirname(__file__)
 
 # --- Resource paths ---
-HOME_BG_PATH = os.path.join(BASE_DIR, "backgrounds", "allinbg.png")
-GAME_BG_PATH = os.path.join(BASE_DIR, "backgrounds", "gamepage_bg.jpg")
-CUSTOM_BG_PATH = os.path.join(BASE_DIR, "backgrounds", "custompage_bg.jpg")
+HOME_BG_PATH = os.path.join(BASE_DIR, "backgrounds", "homepage_bg.png")
+GAME_BG_PATH = os.path.join(BASE_DIR, "backgrounds", "gamebg.png")
+CUSTOM_BG_PATH = os.path.join(BASE_DIR, "backgrounds", "custombg.png")
 
 TITLE_IMG_PATH = os.path.join(BASE_DIR, "png_icons", "allintitle.png")
 

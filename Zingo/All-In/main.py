@@ -1,4 +1,3 @@
-# main.py
 from kivy.config import Config
 from kivy.app import App
 from kivy.uix.screenmanager import ScreenManager

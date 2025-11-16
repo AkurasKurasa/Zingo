@@ -87,7 +87,7 @@ class RoulettePage(Screen):
             text="[b]CONGRATULATIONS![/b]\nYou reached the required points!",
             markup=True,
             font_size='32sp',
-            color=(1, 0.9, 0.2, 1),
+            color=(1, 1, 1, 1),
             font_name=App.get_running_app().font_path,
             halign='center',
             valign='middle',
