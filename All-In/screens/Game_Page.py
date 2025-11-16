@@ -2,6 +2,13 @@
 from functools import partial
 from typing import Optional, Iterable, List, Any
 
+import paths
+
+from kivy.core.window import Window
+from PIL import Image
+from kivy.config import Config
+
+
 import time
 
 import pygame
@@ -519,8 +526,35 @@ class GamePage(Screen):
                 print("Failed to play music:", e)
 
     def on_enter(self):
-        """Play music when entering this screen."""
-        Clock.schedule_once(self.start_music, 0)  # optional delay
+        """Update points, check win condition, and play music."""
+
+        # Update points label
+        self.points_label.text = f"Points: {self.app.POINTS}"
+
+        # Check if player reached required points
+        if self.app.POINTS >= self.app.REQUIRED_POINTS:
+            self.hide_all_widgets()
+            self.flash_label.text = "Congratulations!"
+            self.flash_label.opacity = 1
+
+            # Confetti burst near bottom center
+            cx = self.layout.width * 0.5
+            cy = self.layout.height * 0.05
+            self.confetti.burst(count=150, center=(cx, cy), spread=1.4, size_px=8, life=1.8)
+
+            self.back_btn.opacity = 1
+            self.back_btn.disabled = False
+            self.middle_layout.disabled = True
+            return
+
+        # # Ensure background always matches the screen size
+        # if hasattr(self, "bg_rect"):
+        #     self.bg_rect.size = self.size
+        #     self.bg_rect.pos = self.pos
+
+        # Start music after a slight delay
+        Clock.schedule_once(self.start_music, 0)
+
 
     def on_leave(self):
         """Stop music when leaving screen."""
