@@ -50,6 +50,9 @@ class ZingoEngine:
         if actions == "update_multiplier":
             filepath = paths.UPDATE_MULTIPLIER_ZINGO
 
+        if actions == "update_questions_index":
+            filepath = paths.UPDATE_QUESTIONS_INDEX
+
         try:
             with open(filepath, "r") as f:
                 zingo_code = f.read()

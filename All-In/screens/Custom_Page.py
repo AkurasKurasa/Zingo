@@ -23,7 +23,7 @@ import json
 import fitz
 import re
 import os
-
+import pygame
 
 def switch_screen(instance, manager, screen_name):
     """Switch to another screen using the manager."""
@@ -50,6 +50,10 @@ class CustomPage(Screen):
         self._build_spinner()
         self._build_inputs()
         self._build_buttons()
+
+        # Initialize pygame mixer once
+        if not pygame.mixer.get_init():
+            pygame.mixer.init()
 
     # ---------------------------
     # UI BUILDERS
@@ -701,6 +705,25 @@ class CustomPage(Screen):
 
         print(f"Imported {new_questions_added} new unique questions.")
         print("Total questions:", len(existing_data))
+
+    def start_music(self, dt=None):
+        """Load and play background music with looping and volume."""
+        if hasattr(self.app, 'HEY_YA'):
+            try:
+                pygame.mixer.music.load(self.app.SODA_POP)
+                pygame.mixer.music.set_volume(0.25)  # 0.0 to 1.0
+                pygame.mixer.music.play(-1)  # loop indefinitely
+            except Exception as e:
+                print("Failed to play music:", e)
+
+    def on_enter(self):
+        """Play music when entering this screen."""
+        Clock.schedule_once(self.start_music, 0)  # optional delay
+
+    def on_leave(self):
+        """Stop music when leaving screen."""
+        pygame.mixer.music.stop()
+
 
 
 # --------- File Chooser Popup -------------

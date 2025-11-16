@@ -6,6 +6,8 @@ from kivy.uix.screenmanager import Screen
 from kivy.graphics import Rectangle, Color
 from kivy.core.window import Window
 from kivy.app import App
+from kivy.clock import Clock
+import pygame  # 🔥 added pygame for music
 
 
 class StartPage(Screen):
@@ -15,6 +17,8 @@ class StartPage(Screen):
         self.bg_path = bg_path
         self.font_path = font_path
 
+        self.app = App.get_running_app()
+
         # Main layout container
         self.layout = FloatLayout()
         self.add_widget(self.layout)
@@ -22,6 +26,10 @@ class StartPage(Screen):
         self._add_background()
         self._add_title()
         self._add_buttons()
+
+        # Initialize pygame mixer once
+        if not pygame.mixer.get_init():
+            pygame.mixer.init()
 
     # ============================================================
     #                           UI ELEMENTS
@@ -98,7 +106,6 @@ class StartPage(Screen):
         else:
             btn.text = btn.base_text
 
-
     def _go_to(self, screen_name: str):
         """Screen switching shortcut."""
         if self.manager:
@@ -111,3 +118,21 @@ class StartPage(Screen):
     def _update_bg_size(self, instance, width, height):
         """Handle window resizes."""
         self.bg_rect.size = (width, height)
+
+    def start_music(self, dt=None):
+        """Load and play background music with looping and volume."""
+        if hasattr(self.app, 'HEY_YA'):
+            try:
+                pygame.mixer.music.load(self.app.HEY_YA)
+                pygame.mixer.music.set_volume(0.25)  # 0.0 to 1.0
+                pygame.mixer.music.play(-1)  # loop indefinitely
+            except Exception as e:
+                print("Failed to play music:", e)
+
+    def on_enter(self):
+        """Play music when entering this screen."""
+        Clock.schedule_once(self.start_music, 0.5)  # optional delay
+
+    def on_leave(self):
+        """Stop music when leaving screen."""
+        pygame.mixer.music.stop()

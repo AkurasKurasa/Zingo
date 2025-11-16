@@ -48,6 +48,13 @@ class AllInApp(App):
         self.font_path = paths.FONT_PATH
         self.QUESTIONS_JSON_PATH = paths.QUESTIONS_JSON_PATH
 
+        self.HEY_YA = paths.HEY_YA
+        self.SODA_POP = paths.SODA_POP
+        self.MY_DISCO = paths.MY_DISCO
+        self.TUCA_DONKA = paths.TUCA_DONKA
+        self.CORRECT = paths.CORRECT
+        self.WRONG = paths.WRONG
+
         # HELPER FUNCTIONS
         self.load_csv = self.load_questions
 

@@ -3,6 +3,8 @@ from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.floatlayout import FloatLayout
 from kivy.app import App
+from kivy.clock import Clock
+import pygame
 
 class RoulettePage(Screen):
     def __init__(self, **kwargs):
@@ -10,6 +12,9 @@ class RoulettePage(Screen):
         layout = FloatLayout()
 
         self.app = App.get_running_app()
+
+        if not pygame.mixer.get_init():
+            pygame.mixer.init()
 
 
         # --- Congratulatory message ---
@@ -43,3 +48,21 @@ class RoulettePage(Screen):
         game_page = self.manager.get_screen("game_page")
         game_page.continue_after_roulette()
         self.manager.current = "game_page"
+
+    def start_music(self, dt=None):
+        """Load and play background music with looping and volume."""
+        if hasattr(self.app, 'HEY_YA'):
+            try:
+                pygame.mixer.music.load(self.app.TUCA_DONKA)
+                pygame.mixer.music.set_volume(1)  # 0.0 to 1.0
+                pygame.mixer.music.play(-1)  # loop indefinitely
+            except Exception as e:
+                print("Failed to play music:", e)
+
+    def on_enter(self):
+        """Play music when entering this screen."""
+        Clock.schedule_once(self.start_music, 2)  # optional delay
+
+    def on_leave(self):
+        """Stop music when leaving screen."""
+        pygame.mixer.music.stop()

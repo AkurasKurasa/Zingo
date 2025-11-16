@@ -2,6 +2,10 @@
 from functools import partial
 from typing import Optional, Iterable, List, Any
 
+import time
+
+import pygame
+
 from kivy.uix.screenmanager import Screen
 from kivy.uix.label import Label
 from kivy.uix.button import Button
@@ -60,6 +64,10 @@ class GamePage(Screen):
         self._build_back_button()
         self._build_feedback_and_flash()
         self._build_confetti()
+
+        if not pygame.mixer.get_init():
+            pygame.mixer.pre_init(44100, -16, 2, 256)
+            pygame.mixer.init()
 
         # Ensure background resizes on window change
         Window.bind(on_resize=self.update_rect)
@@ -243,6 +251,8 @@ class GamePage(Screen):
         if not self.app.QUESTIONS:
             return
         
+        self.zingo_engine.run_zingo( "update_questions_index", str(self.app.QUESTION_INDEX), str(len(self.app.QUESTIONS)) )
+        
         if self.app.QUESTION_INDEX + 1 == len(self.app.QUESTIONS):
             self.overdrive = True
 
@@ -250,7 +260,7 @@ class GamePage(Screen):
 
         if self.app.QUESTION_INDEX >= len(self.app.QUESTIONS):
             self.app.QUESTION_INDEX = 0
-            self.randomize_questions()  # 🔥 reshuffle at end of cycle
+            self.randomize_questions()  
 
         Clock.schedule_once(lambda dt: self.next_question(), delay)
 
@@ -392,6 +402,13 @@ class GamePage(Screen):
         """Handle correct answer: update state, show feedback, check conditions."""
         print("Correct")
 
+        # 🔥 PLAY CORRECT SOUND
+        try:
+            if hasattr(self.app, "CORRECT"):
+                pygame.mixer.Sound(self.app.CORRECT).play()
+        except Exception as e:
+            print("Failed to play CORRECT sound:", e)
+
         new_pts = self.zingo_engine.run_zingo( "update_state", str(self.app.POINTS) )
 
         self.app.POINTS = int(new_pts)
@@ -401,7 +418,6 @@ class GamePage(Screen):
         self.app.MULTIPLIER = float(new_multiplier)
 
         self.app.QUESTIONS_IN_A_ROW += 1
-
 
         # Reached required points: finish / celebrate
         if self.app.POINTS >= self.app.REQUIRED_POINTS:
@@ -414,23 +430,31 @@ class GamePage(Screen):
             cy = self.layout.height * 0.05
             self.confetti.burst(count=150, center=(cx, cy), spread=1.4, size_px=8, life=1.8)
 
-            # ensure back button still usable
             self.back_btn.opacity = 1
             self.back_btn.disabled = False
             self.middle_layout.disabled = True
             return
 
-        # Not finished: temporary flash
         self.flash_result("Correct!", duration=1.0)
 
-        # If streak triggers roulette
         if self.app.QUESTIONS_IN_A_ROW >= 5:
             self.app.QUESTIONS_IN_A_ROW = 0
-            # go to roulette after a brief pause
             Clock.schedule_once(lambda dt: setattr(self.manager, 'current', 'roulette_page'), 1.0)
 
+
     def _process_incorrect(self) -> None:
+        
+        try:
+            if hasattr(self.app, "WRONG"):
+                print("SFX should play NOW:", time.time())
+                pygame.mixer.Sound(self.app.WRONG).play()
+                print("After play:", time.time())
+        except Exception as e:
+            print("Failed to play WRONG sound:", e)
+
+        
         print("Wrong")
+
         self.app.QUESTIONS_IN_A_ROW = 0
 
         new_multiplier = self.zingo_engine.run_zingo( "update_multiplier", str(self.app.MULTIPLIER), "0" )
@@ -483,3 +507,21 @@ class GamePage(Screen):
     def continue_after_roulette(self) -> None:
         """Called by roulette page to continue the game flow."""
         self.next_question()
+
+    def start_music(self, dt=None):
+        """Load and play background music with looping and volume."""
+        if hasattr(self.app, 'HEY_YA'):
+            try:
+                pygame.mixer.music.load(self.app.MY_DISCO)
+                pygame.mixer.music.set_volume(0.05)  # 0.0 to 1.0
+                pygame.mixer.music.play(-1)  # loop indefinitely
+            except Exception as e:
+                print("Failed to play music:", e)
+
+    def on_enter(self):
+        """Play music when entering this screen."""
+        Clock.schedule_once(self.start_music, 0)  # optional delay
+
+    def on_leave(self):
+        """Stop music when leaving screen."""
+        pygame.mixer.music.stop()

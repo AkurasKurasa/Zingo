@@ -1,0 +1,11 @@
+FUN update_questions_index(curr_index, length)
+
+    VAR index = curr_index + 1
+
+    RETURN index  
+END
+
+VAR first_inp = INT(input_one)
+VAR second_inp = INT(input_two)
+
+update_multiplier_state(first_inp, second_inp)

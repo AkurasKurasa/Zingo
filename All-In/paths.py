@@ -15,7 +15,14 @@ QUESTIONS_JSON_PATH = os.path.join(BASE_DIR, "questions.json")
 
 UPDATE_POINTS_ZINGO = os.path.join(BASE_DIR, "scripts", "update_points.zingo")
 UPDATE_MULTIPLIER_ZINGO = os.path.join(BASE_DIR, "scripts", "update_multiplier.zingo")
+UPDATE_QUESTIONS_INDEX = os.path.join(BASE_DIR, "scripts", "update_questions_index.zingo")
 
+HEY_YA = os.path.join(BASE_DIR, "audio", "Hey_Ya.mp3")
+SODA_POP = os.path.join(BASE_DIR, "audio", "Soda_Pop.mp3")
+MY_DISCO = os.path.join(BASE_DIR, "audio", "My_Disco.mp3")
+TUCA_DONKA = os.path.join(BASE_DIR, "audio", "TUCA_DONKA.mp3")
+CORRECT = os.path.join(BASE_DIR, "audio", "correct.mp3")
+WRONG = os.path.join(BASE_DIR, "audio", "wrong.mp3")
 
 # --- Validate resources ---
 if not os.path.exists(HOME_BG_PATH):
