@@ -1,0 +1,10 @@
+DEFINE inc()
+    state = state + 1
+END
+
+state = 0
+
+IF input == "increment_state"
+    inc()
+    PRINT "State incremented to: " + state
+END

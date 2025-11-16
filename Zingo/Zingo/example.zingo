@@ -1,0 +1,4 @@
+VAR state = input_value
+VAR ds = "Hello" + state
+
+RETURN ds

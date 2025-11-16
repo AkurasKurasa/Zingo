@@ -1,0 +1,50 @@
+[
+    {
+        "question_type": "Short Answer",
+        "question": "What is the capital of France?",
+        "answer": "Paris",
+        "choices": [
+            null
+        ]
+    },
+    {
+        "question_type": "Multiple Choice",
+        "question": "Which is not a vegetable?",
+        "answer": "Tomato",
+        "choices": [
+            [
+                "Kelp",
+                "Tomato",
+                "Lettuce",
+                "Cabbage"
+            ]
+        ]
+    },
+    {
+        "question_type": "Short Answer",
+        "question": "What is Einstein's formula for relativity?",
+        "answer": "E=mc2",
+        "choices": [
+            null
+        ]
+    },
+    {
+        "question_type": "Short Answer",
+        "question": "Who was considered as the King of Pop?",
+        "answer": "Michael Jackson",
+        "choices": [
+            null
+        ]
+    },
+    {
+        "question_type": "True/False",
+        "question": "Michael Jackson is considered the GOAT of Basketball?",
+        "answer": "False",
+        "choices": [
+            [
+                "True",
+                "False"
+            ]
+        ]
+    }
+]
