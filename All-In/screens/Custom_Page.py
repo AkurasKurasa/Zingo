@@ -16,6 +16,7 @@ from kivy.uix.widget import Widget
 from kivy.core.text import Label as CoreLabel
 from kivy.app import App
 from kivy.clock import Clock
+from utils.zingo_engine import ZingoEngine
 import unicodedata
 import random
 import json
@@ -578,8 +579,6 @@ class CustomPage(Screen):
         popup.content = card
         popup.open()
 
-
-
     # ---------------------------
     # File chooser and PDF import
     # ---------------------------
@@ -702,8 +701,6 @@ class CustomPage(Screen):
 
         print(f"Imported {new_questions_added} new unique questions.")
         print("Total questions:", len(existing_data))
-
-
 
 
 # --------- File Chooser Popup -------------

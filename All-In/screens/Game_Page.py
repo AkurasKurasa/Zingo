@@ -12,6 +12,8 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.core.window import Window
 from kivy.app import App
 from kivy.clock import Clock
+from utils.zingo_engine import ZingoEngine
+
 
 from widgets.confetti import ConfettiWidget
 import random
@@ -37,6 +39,7 @@ class GamePage(Screen):
 
         self.bg_path = bg_path
         self.font_path = font_path
+        self.zingo_engine = ZingoEngine()
 
         # Application/state reference
         self.app = App.get_running_app()
@@ -371,6 +374,9 @@ class GamePage(Screen):
     def _process_correct(self) -> None:
         """Handle correct answer: update state, show feedback, check conditions."""
         print("Correct")
+
+        print(self.zingo_engine.run_zingo("increment_state"))
+
         self.app.POINTS += 1
         self.app.MULTIPLIER += 0.05
         self.app.QUESTIONS_IN_A_ROW += 1

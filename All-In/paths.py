@@ -13,6 +13,8 @@ FONT_PATH = os.path.join(BASE_DIR, "fonts", "PixelifySans-Regular.ttf")
 QUESTIONS_CSV_PATH = os.path.join(BASE_DIR, "questions.csv")
 QUESTIONS_JSON_PATH = os.path.join(BASE_DIR, "questions.json")
 
+ZINGO_FILE = os.path.join(BASE_DIR, "scripts", "script.zingo")
+
 
 # --- Validate resources ---
 if not os.path.exists(HOME_BG_PATH):
