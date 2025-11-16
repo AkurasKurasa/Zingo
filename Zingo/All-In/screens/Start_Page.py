@@ -30,7 +30,7 @@ class StartPage(Screen):
     def _add_background(self):
         """Add and auto-resize background image."""
         with self.layout.canvas:
-            Color(1.0, 0.9, 0.6, 0.4)
+            Color(0.3, 0.2, 0.6, 0.8)
             self.bg_rect = Rectangle(source=self.bg_path, size=Window.size, pos=(0, 0))
 
         Window.bind(on_resize=self._update_bg_size)
