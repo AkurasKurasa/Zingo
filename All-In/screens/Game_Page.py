@@ -37,6 +37,8 @@ class GamePage(Screen):
     def __init__(self, bg_path: str, font_path: str, **kwargs):
         super().__init__(**kwargs)
 
+        self.overdrive = False
+
         self.bg_path = bg_path
         self.font_path = font_path
         self.zingo_engine = ZingoEngine()
@@ -47,6 +49,8 @@ class GamePage(Screen):
         # Root layout
         self.layout = FloatLayout()
         self.add_widget(self.layout)
+
+        self.randomize_questions()
 
         # Build UI pieces
         self._build_background()
@@ -100,7 +104,7 @@ class GamePage(Screen):
         self.points_label = make_label(f"Points: {self.app.POINTS}", "left")
         self.multiplier_label = make_label(f"{self.app.MULTIPLIER}x", "right")
         self.required_label = make_label(f"Required: {self.app.REQUIRED_POINTS}", "left")
-        self.questions_label = make_label("Questions: 1/100", "right")
+        self.questions_label = make_label(f"Questions: {self.app.QUESTION_INDEX + 1}/{len(self.app.QUESTIONS)}", "right")
 
         for w in (self.points_label, self.multiplier_label, self.required_label, self.questions_label):
             top_grid.add_widget(w)
@@ -236,11 +240,18 @@ class GamePage(Screen):
         self.app.QUESTIONS_IN_A_ROW = 0
 
     def advance_question(self, delay: float = 1.0) -> None:
-        """Advance to next question gracefully with scheduling."""
         if not self.app.QUESTIONS:
             return
+        
+        if self.app.QUESTION_INDEX + 1 == len(self.app.QUESTIONS):
+            self.overdrive = True
 
-        self.app.QUESTION_INDEX = (self.app.QUESTION_INDEX + 1) % len(self.app.QUESTIONS)
+        self.app.QUESTION_INDEX += 1
+
+        if self.app.QUESTION_INDEX >= len(self.app.QUESTIONS):
+            self.app.QUESTION_INDEX = 0
+            self.randomize_questions()  # 🔥 reshuffle at end of cycle
+
         Clock.schedule_once(lambda dt: self.next_question(), delay)
 
     # ---------------------------
@@ -349,6 +360,12 @@ class GamePage(Screen):
         self.points_label.text = f"Points: {self.app.POINTS}"
         self.multiplier_label.text = f"{self.app.MULTIPLIER:.2f}x"
 
+        # 🔥 FIX THE BUG HERE
+
+        self.questions_label.text = f"Questions: {idx + 1}/{len(self.app.QUESTIONS)}"
+
+        if self.overdrive: self.questions_label.text += "+"
+
         # Render inputs/options
         self.update_middle_layout(question_type, answer, choices)
 
@@ -375,9 +392,16 @@ class GamePage(Screen):
         """Handle correct answer: update state, show feedback, check conditions."""
         print("Correct")
 
-        self.app.POINTS += 1
-        self.app.MULTIPLIER += 0.05
+        new_pts = self.zingo_engine.run_zingo( "update_state", str(self.app.POINTS) )
+
+        self.app.POINTS = int(new_pts)
+
+        new_multiplier = self.zingo_engine.run_zingo( "update_multiplier", str(self.app.MULTIPLIER), "1" )
+
+        self.app.MULTIPLIER = float(new_multiplier)
+
         self.app.QUESTIONS_IN_A_ROW += 1
+
 
         # Reached required points: finish / celebrate
         if self.app.POINTS >= self.app.REQUIRED_POINTS:
@@ -408,6 +432,11 @@ class GamePage(Screen):
     def _process_incorrect(self) -> None:
         print("Wrong")
         self.app.QUESTIONS_IN_A_ROW = 0
+
+        new_multiplier = self.zingo_engine.run_zingo( "update_multiplier", str(self.app.MULTIPLIER), "0" )
+
+        self.app.MULTIPLIER = float(new_multiplier)
+
         self.flash_result("Wrong!", duration=1.0)
 
     # ---------------------------
@@ -442,8 +471,14 @@ class GamePage(Screen):
         self.show_all_widgets()
         self.middle_layout.disabled = False
         self.flash_label.opacity = 0
+        self.overdrive = False
+        self.randomize_questions()
         self.next_question()
         switch_screen(instance, self.manager, "start_page")
+
+    def randomize_questions(self):
+        questions = random.sample(self.app.QUESTIONS, len(self.app.QUESTIONS))
+        self.app.QUESTIONS = questions
 
     def continue_after_roulette(self) -> None:
         """Called by roulette page to continue the game flow."""

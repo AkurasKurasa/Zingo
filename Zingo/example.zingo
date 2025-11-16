@@ -1,28 +1,31 @@
 FUN update_points_state(points)
-	VAR finalpoints = points + 1
-    VAR multiplier = 5.2
-	RETURN finalpoints + multiplier
+    VAR finalpoints = points + 1
+    RETURN finalpoints
 END
 
 FUN get_position_values(diff)
     VAR positions = []
 
     FOR i = 0 TO 5 THEN
-		APPEND(positions, i + diff)
-	END
+        VAR res = diff + i
+        APPEND(positions, res)
+    END
 
-	RETURN positions
+    RETURN positions
+END
+
+FUN get_list_values(lst)
+    VAR len = LEN(lst)
+
+    FOR i = 0 TO len THEN
+        PRINT(lst/i)
+    END
 END
 
 FUN r(num)
-	VAR result = num + 1
-	RETURN result
+    VAR result = num + 1
+    RETURN result
 END
 
-FOR i = 0 TO 5 THEN
-    PRINT("skibidi")
-END
-
-
-VAR inpone = INT(input_value)
-get_position_values(inpone)
+VAR inpone = LIST(input_value)
+get_list_values(inpone)

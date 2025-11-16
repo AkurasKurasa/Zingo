@@ -1880,6 +1880,88 @@ class BuiltInFunction(BaseFunction):
     ))
   execute_int.arg_names = ["value"]
 
+  def execute_float(self, exec_ctx):
+      value = exec_ctx.symbol_table.get("value")
+
+      # If already a Number → convert its internal value to float
+      if isinstance(value, Number):
+          return RTResult().success(Number(float(value.value)))
+
+      # If it's a string → try converting
+      if isinstance(value, String):
+          try:
+              num = float(value.value)
+              return RTResult().success(Number(num))
+          except ValueError:
+              return RTResult().failure(RTError(
+                  self.pos_start, self.pos_end,
+                  f"Cannot convert '{value.value}' to float",
+                  exec_ctx
+              ))
+
+      return RTResult().failure(RTError(
+          self.pos_start, self.pos_end,
+          "Argument to float() must be a string or number",
+          exec_ctx
+      ))
+  execute_float.arg_names = ["value"]
+
+  def execute_list(self, exec_ctx):
+      value = exec_ctx.symbol_table.get("value")
+
+      # No argument → empty list
+      if value is None:
+          return RTResult().success(List([]))
+
+      # If already a List → return a shallow copy
+      if isinstance(value, List):
+          return RTResult().success(List(value.elements.copy()))
+
+      # If it's a String → split into tokens and convert each token
+      if isinstance(value, String):
+          text = value.value.strip()
+          if text == "":
+              return RTResult().success(List([]))
+
+          # allow commas as separators too: "a,b c" -> ["a","b","c"]
+          tokens = []
+          for part in text.replace(",", " ").split():
+              tokens.append(part)
+
+          elements = []
+          for tok in tokens:
+              # try integer
+              try:
+                  if "." not in tok:
+                      num = int(tok)
+                      elements.append(Number(num))
+                      continue
+                  # contains a dot -> try float
+                  num = float(tok)
+                  elements.append(Number(num))
+                  continue
+              except Exception:
+                  pass
+
+              # not a number -> keep as string
+              elements.append(String(tok))
+
+          return RTResult().success(List(elements))
+
+      # If it's a Number -> create single-element list containing that number
+      if isinstance(value, Number):
+          return RTResult().success(List([value]))
+
+      # Otherwise: unsupported type
+      return RTResult().failure(RTError(
+          self.pos_start, self.pos_end,
+          "Argument to list() must be a string, number or list",
+          exec_ctx
+      ))
+
+  # call signature: one optional arg (value)
+  execute_list.arg_names = ["value"]
+
 
 BuiltInFunction.print       = BuiltInFunction("print")
 BuiltInFunction.print_ret   = BuiltInFunction("print_ret")
@@ -1896,6 +1978,8 @@ BuiltInFunction.extend      = BuiltInFunction("extend")
 BuiltInFunction.len					= BuiltInFunction("len")
 BuiltInFunction.run					= BuiltInFunction("run")
 BuiltInFunction.int         = BuiltInFunction("int")
+BuiltInFunction.float       = BuiltInFunction("float")
+BuiltInFunction.list       = BuiltInFunction("list")
 
 #######################################
 # CONTEXT
@@ -2208,6 +2292,8 @@ global_symbol_table.set("EXTEND", BuiltInFunction.extend)
 global_symbol_table.set("LEN", BuiltInFunction.len)
 global_symbol_table.set("RUN", BuiltInFunction.run)
 global_symbol_table.set("INT", BuiltInFunction.int)
+global_symbol_table.set("FLOAT", BuiltInFunction.float)
+global_symbol_table.set("LIST", BuiltInFunction.list)
 
 def run(fn, text, parent_context=None): # New optional argument
     lexer = Lexer(fn, text)

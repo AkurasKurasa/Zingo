@@ -1,0 +1,15 @@
+FUN update_multiplier_state(points, result)
+
+    VAR finalpoints = 0
+    
+    IF result == 1 THEN VAR finalpoints = points + 0.25 ELSE VAR finalpoints = points - 0.5
+
+    IF finalpoints <= 1 THEN RETURN 1
+
+    RETURN finalpoints
+END
+
+VAR first_inp = FLOAT(input_one)
+VAR second_inp = INT(input_two)
+
+update_multiplier_state(first_inp, second_inp)

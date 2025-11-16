@@ -13,6 +13,7 @@ from screens.Roulette_Page import RoulettePage
 from dataclasses import dataclass
 import paths
 import json
+import random
 
 # --- Window setup ---
 img = Image.open(paths.HOME_BG_PATH)
@@ -39,8 +40,8 @@ class AllInApp(App):
         self.QUESTIONS = []
         self.QUESTION_INDEX = 0
         self.POINTS = 100 
-        self.REQUIRED_POINTS = 102
-        self.MULTIPLIER = 1
+        self.REQUIRED_POINTS = 110
+        self.MULTIPLIER = 1.25
         self.QUESTIONS_IN_A_ROW = 0
 
         # PATHS
@@ -65,6 +66,8 @@ class AllInApp(App):
                 }
             
                 questions.append(question)
+            
+            questions = random.sample(questions, len(questions))
             
             self.QUESTIONS = questions
 

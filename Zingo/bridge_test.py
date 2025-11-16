@@ -11,7 +11,7 @@ context.symbol_table = global_symbol_table
 
 context.symbol_table.set("input_value", String(user_input))
 
-result, error = basic.run("example.zingo", zingo_code, context) 
+result, error = basic.run("update_state.zingo", zingo_code, context) 
 
 if error:
     print(error.as_string())

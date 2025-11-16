@@ -1,0 +1,7 @@
+FUN update_points_state(points)
+    VAR finalpoints = points + 1
+    RETURN finalpoints
+END
+
+VAR inpone = INT(input_one)
+update_points_state(inpone)
