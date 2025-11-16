@@ -1854,6 +1854,33 @@ class BuiltInFunction(BaseFunction):
     return RTResult().success(Number.null)
   execute_run.arg_names = ["fn"]
 
+  def execute_int(self, exec_ctx):
+    value = exec_ctx.symbol_table.get("value")
+
+    # If already a number → return as is
+    if isinstance(value, Number):
+        return RTResult().success(value)
+
+    # If it's a string → try converting
+    if isinstance(value, String):
+        try:
+            num = int(value.value)
+            return RTResult().success(Number(num))
+        except ValueError:
+            return RTResult().failure(RTError(
+                self.pos_start, self.pos_end,
+                f"Cannot convert '{value.value}' to int",
+                exec_ctx
+            ))
+
+    return RTResult().failure(RTError(
+        self.pos_start, self.pos_end,
+        "Argument to int() must be a string or number",
+        exec_ctx
+    ))
+  execute_int.arg_names = ["value"]
+
+
 BuiltInFunction.print       = BuiltInFunction("print")
 BuiltInFunction.print_ret   = BuiltInFunction("print_ret")
 BuiltInFunction.input       = BuiltInFunction("input")
@@ -1868,6 +1895,7 @@ BuiltInFunction.pop         = BuiltInFunction("pop")
 BuiltInFunction.extend      = BuiltInFunction("extend")
 BuiltInFunction.len					= BuiltInFunction("len")
 BuiltInFunction.run					= BuiltInFunction("run")
+BuiltInFunction.int         = BuiltInFunction("int")
 
 #######################################
 # CONTEXT
@@ -2179,6 +2207,7 @@ global_symbol_table.set("POP", BuiltInFunction.pop)
 global_symbol_table.set("EXTEND", BuiltInFunction.extend)
 global_symbol_table.set("LEN", BuiltInFunction.len)
 global_symbol_table.set("RUN", BuiltInFunction.run)
+global_symbol_table.set("INT", BuiltInFunction.int)
 
 def run(fn, text, parent_context=None): # New optional argument
     lexer = Lexer(fn, text)

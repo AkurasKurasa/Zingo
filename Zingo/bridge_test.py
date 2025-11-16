@@ -9,7 +9,7 @@ with open("example.zingo", "r") as f:
 context = Context('<bridge_test>')
 context.symbol_table = global_symbol_table
 
-context.symbol_table.set("input_value", int(user_input))
+context.symbol_table.set("input_value", String(user_input))
 
 result, error = basic.run("example.zingo", zingo_code, context) 
 

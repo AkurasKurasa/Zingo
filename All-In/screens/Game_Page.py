@@ -375,8 +375,6 @@ class GamePage(Screen):
         """Handle correct answer: update state, show feedback, check conditions."""
         print("Correct")
 
-        print(self.zingo_engine.run_zingo("increment_state"))
-
         self.app.POINTS += 1
         self.app.MULTIPLIER += 0.05
         self.app.QUESTIONS_IN_A_ROW += 1
