@@ -5,7 +5,7 @@ import os
 BASE_DIR = os.path.dirname(__file__)
 
 # --- Resource paths ---
-HOME_BG_PATH = os.path.join(BASE_DIR, "backgrounds", "homepage_bg.jpg")
+HOME_BG_PATH = os.path.join(BASE_DIR, "backgrounds", "Start_Page_Final_BG.jpg")
 GAME_BG_PATH = os.path.join(BASE_DIR, "backgrounds", "gamepage_bg.jpg")
 CUSTOM_BG_PATH = os.path.join(BASE_DIR, "backgrounds", "custompage_bg.jpg")
 

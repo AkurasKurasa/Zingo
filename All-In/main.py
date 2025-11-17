@@ -32,7 +32,7 @@ class Question:
     choices: list | None = None
 
 class AllInApp(App):
-
+    
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -40,7 +40,7 @@ class AllInApp(App):
         self.QUESTIONS = []
         self.QUESTION_INDEX = 0
         self.POINTS = 100 
-        self.REQUIRED_POINTS = 110
+        self.REQUIRED_POINTS = 5000
         self.MULTIPLIER = 1.25
         self.QUESTIONS_IN_A_ROW = 0
 

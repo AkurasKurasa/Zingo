@@ -506,6 +506,8 @@ class CustomPage(Screen):
                 with open(self.app.QUESTIONS_JSON_PATH, 'w', encoding='utf-8') as f:
                     json.dump(data, f, indent=4, ensure_ascii=False)
 
+                self.app.QUESTIONS = data
+
                 inner.remove_widget(container)
                 update_question_numbers()
 
@@ -597,6 +599,9 @@ class CustomPage(Screen):
         popup.open()
 
     def files_chosen(self, filepaths):
+
+        self.uploadStatusLabel.text = "Selected files:\n" + "\n".join(filepaths)
+
         if not filepaths:
             print("No file selected.")
             return

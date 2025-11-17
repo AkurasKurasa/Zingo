@@ -4,6 +4,7 @@ from typing import Optional, Iterable, List, Any
 
 import paths
 
+from kivy.uix.widget import Widget
 from kivy.core.window import Window
 from PIL import Image
 from kivy.config import Config
@@ -27,6 +28,8 @@ from utils.zingo_engine import ZingoEngine
 
 
 from widgets.confetti import ConfettiWidget
+from widgets.particles import ParticlesWidget
+
 import random
 
 
@@ -61,16 +64,19 @@ class GamePage(Screen):
         self.layout = FloatLayout()
         self.add_widget(self.layout)
 
+        print(self.app.QUESTIONS)
+
         self.randomize_questions()
 
         # Build UI pieces
         self._build_background()
-        self._build_header()
+        self._build_temp_header()
         self._build_question_labels()
         self._build_middle_area()
         self._build_back_button()
         self._build_feedback_and_flash()
         self._build_confetti()
+        self._build_particle()
 
         if not pygame.mixer.get_init():
             pygame.mixer.pre_init(44100, -16, 2, 256)
@@ -90,6 +96,52 @@ class GamePage(Screen):
         with self.layout.canvas:
             Color(1, 1, 1, 0.15)
             self.bg_rect = Rectangle(source=self.bg_path, pos=(0, 0), size=Window.size)
+
+    def _build_temp_header(self) -> None:
+        """Top header: Points | Multiplier | Required | Questions | Streak"""
+        def make_label(text: str, halign: str) -> Label:
+            lbl = Label(
+                text=text,
+                font_size=20,
+                color=(1, 1, 1, 1),
+                font_name=self.font_path,
+                halign=halign,
+                valign='middle',
+                size_hint=(1, 1),
+            )
+            lbl.bind(size=lambda instance, value: setattr(instance, 'text_size', (instance.width, instance.height)))
+            return lbl
+
+        # 3 COLUMNS, 2 ROWS = 6 CELLS → PLENTY OF SPACE
+        top_grid = GridLayout(
+            cols=3,
+            rows=2,
+            size_hint=(0.95, None),
+            height=80,
+            pos_hint={'center_x': 0.5, 'top': 1},
+            spacing=[10, 5],
+            padding=[10, 20, 10, 10]
+        )
+
+        # ROW 1
+        self.points_label = make_label(f"Points: {self.app.POINTS}", "left")
+        self.multiplier_label = make_label(f"{self.app.MULTIPLIER:.2f}x", "center")
+        self.required_label = make_label(f"Required: {self.app.REQUIRED_POINTS}", "right")
+
+        # ROW 2
+        self.questions_label = make_label("Questions: 1/100", "left")
+        spacer = Widget() 
+        self.streak_label = make_label("Streak: 0", "right")
+
+        top_grid.add_widget(self.points_label)
+        top_grid.add_widget(self.multiplier_label)
+        top_grid.add_widget(self.required_label)
+
+        top_grid.add_widget(self.questions_label)
+        top_grid.add_widget(spacer)
+        top_grid.add_widget(self.streak_label)
+
+        self.layout.add_widget(top_grid)
 
     def _build_header(self) -> None:
         """Top 2x2 header showing points, multiplier, required, and question count."""
@@ -195,6 +247,10 @@ class GamePage(Screen):
         self.confetti = ConfettiWidget(size_hint=(1, 1))
         self.layout.add_widget(self.confetti)
 
+    def _build_particle(self) -> None:
+        self.particle = ParticlesWidget(size_hint=(1, 1))
+        self.layout.add_widget(self.particle)
+
     # ---------------------------
     # Geometry / events
     # ---------------------------
@@ -239,12 +295,12 @@ class GamePage(Screen):
     def hide_all_widgets(self) -> None:
         """Hide everything except flash_label and confetti (used during flash / finished state)."""
         for widget in list(self.layout.children):
-            if widget not in (self.flash_label, self.confetti):
+            if widget not in (self.flash_label, self.confetti, self.particle):
                 widget.opacity = 0
 
     def show_all_widgets(self) -> None:
         for widget in list(self.layout.children):
-            if widget not in (self.flash_label, self.confetti):
+            if widget not in (self.flash_label, self.confetti, self.particle):
                 widget.opacity = 1
 
     def reset_game_state(self) -> None:
@@ -267,7 +323,7 @@ class GamePage(Screen):
 
         if self.app.QUESTION_INDEX >= len(self.app.QUESTIONS):
             self.app.QUESTION_INDEX = 0
-            self.randomize_questions()  
+            # self.randomize_questions()  
 
         Clock.schedule_once(lambda dt: self.next_question(), delay)
 
@@ -376,6 +432,7 @@ class GamePage(Screen):
         self.questionLabel.text = question_text
         self.points_label.text = f"Points: {self.app.POINTS}"
         self.multiplier_label.text = f"{self.app.MULTIPLIER:.2f}x"
+        self.streak_label.text = f"Streak: {self.app.QUESTIONS_IN_A_ROW}"
 
         # 🔥 FIX THE BUG HERE
 
@@ -446,7 +503,8 @@ class GamePage(Screen):
 
         if self.app.QUESTIONS_IN_A_ROW >= 5:
             self.app.QUESTIONS_IN_A_ROW = 0
-            Clock.schedule_once(lambda dt: setattr(self.manager, 'current', 'roulette_page'), 1.0)
+            if self.app.POINTS < self.app.REQUIRED_POINTS:
+                Clock.schedule_once(lambda dt: setattr(self.manager, 'current', 'roulette_page'), 1.0)
 
 
     def _process_incorrect(self) -> None:
@@ -465,6 +523,21 @@ class GamePage(Screen):
         new_multiplier = self.zingo_engine.run_zingo( "update_multiplier", str(self.app.MULTIPLIER), "0" )
 
         self.app.MULTIPLIER = float(new_multiplier)
+
+        if self.app.POINTS <= 0:
+            self.app.POINTS = 0
+            self.hide_all_widgets()
+            self.flash_label.text = "You Lose!"
+            self.flash_label.opacity = 1
+
+            cx = self.layout.width * 0.5
+            cy = self.layout.height
+            self.particle.burst(count=120, center=(cx, cy), size_px=6, life=1.8)
+
+            self.middle_layout.disabled = True
+            self.back_btn.opacity = 1
+            self.back_btn.disabled = False
+            return
 
         self.flash_result("Wrong!", duration=1.0)
 
@@ -509,6 +582,16 @@ class GamePage(Screen):
         questions = random.sample(self.app.QUESTIONS, len(self.app.QUESTIONS))
         self.app.QUESTIONS = questions
 
+    def refresh_questions(self):
+        # Update the internal questions list
+        self.questions = App.get_running_app().QUESTIONS
+
+        # Rebuild the question UI
+        self.question_container.clear_widgets()  # if you have a container
+        for q in self.questions:
+            # create and add widgets for each question
+            self.add_question_widget(q)
+
     def continue_after_roulette(self) -> None:
         """Called by roulette page to continue the game flow."""
         self.next_question()
@@ -523,34 +606,45 @@ class GamePage(Screen):
             except Exception as e:
                 print("Failed to play music:", e)
 
+    def display_no_questions(self):
+        self.hide_all_widgets()
+        self.flash_label.text = "No questions available"
+        self.flash_label.opacity = 1
+        self.back_btn.opacity = 1
+        self.back_btn.disabled = False
+        return
+
+    def display_congratulations(self):
+        self.hide_all_widgets()
+        self.flash_label.text = "Congratulations!"
+        self.flash_label.opacity = 1
+
+        # Confetti burst near bottom center
+        cx = self.layout.width * 0.5
+        cy = self.layout.height * 0.05
+        self.confetti.burst(count=150, center=(cx, cy), spread=1.4, size_px=8, life=1.8)
+
+        self.back_btn.opacity = 1
+        self.back_btn.disabled = False
+        self.middle_layout.disabled = True
+        return
+
+
     def on_enter(self):
         """Update points, check win condition, and play music."""
 
+        if len(self.app.QUESTIONS) == 0:
+            self.display_no_questions()
+
         # Update points label
         self.points_label.text = f"Points: {self.app.POINTS}"
+        self.app.load_questions()
 
         # Check if player reached required points
         if self.app.POINTS >= self.app.REQUIRED_POINTS:
-            self.hide_all_widgets()
-            self.flash_label.text = "Congratulations!"
-            self.flash_label.opacity = 1
-
-            # Confetti burst near bottom center
-            cx = self.layout.width * 0.5
-            cy = self.layout.height * 0.05
-            self.confetti.burst(count=150, center=(cx, cy), spread=1.4, size_px=8, life=1.8)
-
-            self.back_btn.opacity = 1
-            self.back_btn.disabled = False
-            self.middle_layout.disabled = True
-            return
-
-        # # Ensure background always matches the screen size
-        # if hasattr(self, "bg_rect"):
-        #     self.bg_rect.size = self.size
-        #     self.bg_rect.pos = self.pos
-
-        # Start music after a slight delay
+            self.display_congratulations()
+            
+        
         Clock.schedule_once(self.start_music, 0)
 
 
