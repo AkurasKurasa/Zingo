@@ -1,0 +1,7 @@
+RIZZ update_points_state(points)
+    gyatt finalpoints = points + 1
+    REPOST finalpoints
+PERIODT
+
+gyatt inpone = INT(input_one)
+update_points_state(inpone)

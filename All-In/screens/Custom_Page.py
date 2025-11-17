@@ -131,10 +131,14 @@ class CustomPage(Screen):
 
         # --- Save Question Button ---
         def on_save(instance):
-            if self.questionTypeSpinner.text in ["Short Answer", "True/False"]:
+            if self.questionTypeSpinner.text in ["Short Answer"]:
                 if not self.questionInput.text or not self.answerInput.text:
                     self.successLabel.text = "Please fill in all fields."
                     return
+            elif self.questionTypeSpinner.text in ["True/False"]:
+                if not self.questionInput.text or not self.answer_dropdown.text:
+                    self.successLabel.text = "Please fill in all fields."
+
             elif self.questionTypeSpinner.text == "Multiple Choice":
                 if not self.questionInput.text or any(not i.text.strip() for i in self.answer_inputs):
                     self.successLabel.text = "Please fill in all fields."

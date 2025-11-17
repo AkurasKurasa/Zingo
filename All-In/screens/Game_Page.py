@@ -607,7 +607,7 @@ class GamePage(Screen):
         if hasattr(self.app, 'HEY_YA'):
             try:
                 pygame.mixer.music.load(self.app.MY_DISCO)
-                pygame.mixer.music.set_volume(0.05)  # 0.0 to 1.0
+                pygame.mixer.music.set_volume(0.75)  # 0.0 to 1.0
                 pygame.mixer.music.play(-1)  # loop indefinitely
             except Exception as e:
                 print("Failed to play music:", e)

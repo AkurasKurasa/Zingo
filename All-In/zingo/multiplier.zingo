@@ -1,0 +1,15 @@
+RIZZ update_multiplier_state(points, result)
+
+    gyatt finalpoints = 0
+    
+    SHEESH result == 1 FR gyatt finalpoints = points + 0.25 NOCAP gyatt finalpoints = points - 0.5
+
+    SHEESH finalpoints <= 1 THEN RETURN 1
+
+    REPOST finalpoints
+PERIODT
+
+gyatt first_inp = FLOAT(input_one)
+gyatt second_inp = INT(input_two)
+
+update_multiplier_state(first_inp, second_inp)
