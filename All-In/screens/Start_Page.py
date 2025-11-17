@@ -7,6 +7,7 @@ from kivy.graphics import Rectangle, Color
 from kivy.core.window import Window
 from kivy.app import App
 from kivy.clock import Clock
+from kivy.uix.image import Image
 import pygame  # 🔥 added pygame for music
 
 
@@ -38,21 +39,21 @@ class StartPage(Screen):
     def _add_background(self):
         """Add and auto-resize background image."""
         with self.layout.canvas:
-            Color(1, 1, 1, 0.5)
+            Color(1, 1, 1, 0.6)
             self.bg_rect = Rectangle(source=self.bg_path, size=Window.size, pos=(0, 0))
 
         Window.bind(on_resize=self._update_bg_size)
 
     def _add_title(self):
-        """Add main title label."""
-        title = Label(
-            text="All-In",
-            font_size=81,
-            color=(1, 1, 1, 1),
-            pos_hint={'center_x': 0.5, 'top': 1.15},
-            font_name=self.font_path
+        self.logo = Image(
+            source=self.app.ALL_IN_LOGO,     # ← your logo file path
+            size_hint=(None, None),
+            size=(300, 171),              # adjust as needed
+            allow_stretch=True,
+            keep_ratio=True,
+            pos_hint={'center_x': 0.5, 'top': 0.75}
         )
-        self.layout.add_widget(title)
+        self.layout.add_widget(self.logo)
 
     def _add_buttons(self):
         """Create and place Start, Custom, Quit buttons."""
@@ -79,7 +80,7 @@ class StartPage(Screen):
             background_normal='',
             background_color=(0, 0, 0, 0),
             font_name=self.font_path,
-            font_size=32
+            font_size=32,
         )
 
         # Store original text

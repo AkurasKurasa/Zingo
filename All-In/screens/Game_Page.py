@@ -8,6 +8,7 @@ from kivy.uix.widget import Widget
 from kivy.core.window import Window
 from PIL import Image
 from kivy.config import Config
+from kivy.uix.image import Image
 
 
 import time
@@ -94,7 +95,7 @@ class GamePage(Screen):
 
     def _build_background(self) -> None:
         with self.layout.canvas:
-            Color(1, 1, 1, 0.15)
+            Color(1, 1, 1, 0.25)
             self.bg_rect = Rectangle(source=self.bg_path, pos=(0, 0), size=Window.size)
 
     def _build_temp_header(self) -> None:
@@ -313,19 +314,21 @@ class GamePage(Screen):
     def advance_question(self, delay: float = 1.0) -> None:
         if not self.app.QUESTIONS:
             return
-        
-        self.zingo_engine.run_zingo( "update_questions_index", str(self.app.QUESTION_INDEX), str(len(self.app.QUESTIONS)) )
-        
+
+        self.zingo_engine.run_zingo("update_questions_index", str(self.app.QUESTION_INDEX), str(len(self.app.QUESTIONS)))
+
         if self.app.QUESTION_INDEX + 1 == len(self.app.QUESTIONS):
             self.overdrive = True
 
         self.app.QUESTION_INDEX += 1
 
+        # Reset at end
         if self.app.QUESTION_INDEX >= len(self.app.QUESTIONS):
             self.app.QUESTION_INDEX = 0
-            # self.randomize_questions()  
+            # Do not reshuffle mid-game — only shuffle on full reset
 
         Clock.schedule_once(lambda dt: self.next_question(), delay)
+
 
     # ---------------------------
     # Question rendering & input handling
@@ -336,18 +339,19 @@ class GamePage(Screen):
         self.middle_layout.clear_widgets()
 
         if question_type.lower() in ("multiple choice", "multiple_choice", "mcq"):
-            # ensure choices is a plain list
+            # Make a copy of choices so we never modify original
             opts = list(choices) if choices else []
-            # shuffle choices deterministically each time
+            
+            # Shuffle freshly every time
             random.shuffle(opts)
 
+            self.middle_layout.clear_widgets()
             self.middle_layout.cols = 2
             self.middle_layout.rows = 2
 
             for choice in opts:
                 choice_text = str(choice)
                 btn = self.make_option_button(choice_text)
-                # Use partial to avoid late binding bugs
                 btn.bind(on_release=partial(self._on_option_selected, choice_text, correct_answer))
                 self.middle_layout.add_widget(btn)
 
@@ -574,13 +578,15 @@ class GamePage(Screen):
         self.middle_layout.disabled = False
         self.flash_label.opacity = 0
         self.overdrive = False
-        self.randomize_questions()
+        # self.randomize_questions()
         self.next_question()
         switch_screen(instance, self.manager, "start_page")
 
     def randomize_questions(self):
-        questions = random.sample(self.app.QUESTIONS, len(self.app.QUESTIONS))
-        self.app.QUESTIONS = questions
+        # Shuffle only once at start or after full reset
+        if not hasattr(self.app, "_shuffled_questions"):
+            self.app._shuffled_questions = random.sample(self.app.QUESTIONS, len(self.app.QUESTIONS))
+        self.app.QUESTIONS = self.app._shuffled_questions
 
     def refresh_questions(self):
         # Update the internal questions list
@@ -638,7 +644,6 @@ class GamePage(Screen):
 
         # Update points label
         self.points_label.text = f"Points: {self.app.POINTS}"
-        self.app.load_questions()
 
         # Check if player reached required points
         if self.app.POINTS >= self.app.REQUIRED_POINTS:

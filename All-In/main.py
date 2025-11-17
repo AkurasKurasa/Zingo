@@ -9,6 +9,7 @@ from screens.Start_Page import StartPage
 from screens.Game_Page import GamePage
 from screens.Custom_Page import CustomPage
 from screens.Roulette_Page import RoulettePage
+from screens.Roulette_Game import MainUI
 
 from dataclasses import dataclass
 import paths
@@ -21,7 +22,9 @@ img_width, img_height = img.size
 Config.set('graphics', 'width', str(img_width))
 Config.set('graphics', 'height', str(img_height))
 Config.set('graphics', 'resizable', '0')
-Window.size = (img_width, img_height)
+Window.size = (800, 450)
+Window.allow_screensaver = True
+Window.borderless = False
 
 # --- Data Structures ---
 @dataclass
@@ -40,13 +43,15 @@ class AllInApp(App):
         self.QUESTIONS = []
         self.QUESTION_INDEX = 0
         self.POINTS = 100 
-        self.REQUIRED_POINTS = 5000
+        self.REQUIRED_POINTS = 200
         self.MULTIPLIER = 1.25
         self.QUESTIONS_IN_A_ROW = 0
 
         # PATHS
         self.font_path = paths.FONT_PATH
         self.QUESTIONS_JSON_PATH = paths.QUESTIONS_JSON_PATH
+
+        self.ALL_IN_LOGO = paths.ALL_IN_LOGO
 
         self.HEY_YA = paths.HEY_YA
         self.SODA_POP = paths.SODA_POP

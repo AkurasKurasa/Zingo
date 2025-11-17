@@ -1,75 +1,135 @@
 from kivy.uix.screenmanager import Screen
-from kivy.uix.label import Label
+from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
-from kivy.uix.floatlayout import FloatLayout
 from kivy.app import App
 from kivy.clock import Clock
-from Roulette_Game import MainUI
+from screens.Roulette_Game import MainUI
 import pygame
 
+from kivy.core.window import Window
+
+# Set window width and height (width, height)
+# screens/Roulette_Page.py
+from kivy.properties import NumericProperty, ObjectProperty
+from kivy.lang import Builder
+from kivy.app import App
+from kivy.clock import Clock
+from kivy.core.window import Window
+
+# --- KV LAYOUT ---
+Builder.load_string('''
+<RoulettePage>:
+    name: "roulette_page"
+    BoxLayout:
+        orientation: 'vertical'
+        padding: 10
+        spacing: 8
+        BoxLayout:
+            size_hint_y: None
+            height: 540
+            MainUI:
+                id: main_ui
+                balance: root.initial_balance
+                size_hint: None, None
+                size: self.parent.size
+        Button:
+            text: "Collect & Exit"
+            font_name: app.font_path if app.font_path else "Roboto"
+            font_size: '20sp'
+            size_hint_x: None
+            size_hint_y: None
+            width: 180
+            height: 44
+            pos_hint: {'center_x': 0.5}
+            background_normal: ''
+            background_color: 0, 0, 0, 1
+            color: 1, 1, 1, 1
+            on_release: root.collect_and_exit()
+''')
+
 class RoulettePage(Screen):
+    initial_balance = NumericProperty(100)
+    main_ui = ObjectProperty(None)
+    _original_size = None
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        layout = FloatLayout()
 
-        self.app = App.get_running_app()
+    def on_pre_enter(self):
+        # SAVE ORIGINAL SIZE BEFORE SWITCH
+        self._original_size = Window.size
 
-        if not pygame.mixer.get_init():
-            pygame.mixer.init()
+        Window.size = (800, 600)
 
+        app = App.get_running_app()
+        self.initial_balance = app.POINTS
 
-        # --- Congratulatory message ---
-        label = Label(
-            text="Congratulations!\nYou reached 5 correct answers in a row!",
-            font_size=32,
-            halign="center",
-            valign="middle",
-            pos_hint={'center_x': 0.5, 'center_y': 0.6},
-            size_hint_x=(0.7),
-            font_name=self.app.font_path
-        )
+    def on_enter(self):
+        self.main_ui = self.ids.main_ui
 
-        label.bind(size=lambda instance, value: setattr(instance, 'text_size', value))
-        layout.add_widget(label)
+    def collect_and_exit(self):
+        if self.main_ui:
+            winnings = int(self.main_ui.balance)
+            app = App.get_running_app()
+            app.POINTS = winnings
 
-        # --- Continue button ---
-        continue_btn = Button(
-            text="Continue",
-            size_hint=(0.3, 0.1),
-            pos_hint={'center_x': 0.5, 'y': 0.1},
-            font_size=24,
-            font_name=self.app.font_path
-        )
-        continue_btn.bind(on_release=self.go_back_to_game)
-        layout.add_widget(continue_btn)
+            if winnings >= app.REQUIRED_POINTS:
+                self.show_congrats()
+                return
 
-        self.add_widget(layout)
+        self._restore_and_go_back()
 
-    def go_back_to_game(self, instance):
-        game_page = self.manager.get_screen("game_page")
-        game_page.continue_after_roulette()
-        self.manager.current = "game_page"
+    def _restore_and_go_back(self):
+        if self._original_size:
+            Window.size = self._original_size
+        if self.manager:
+            self.manager.current = "game_page"
 
+    # def show_congrats(self):
+    #     from kivy.uix.label import Label
+    #     from kivy.animation import Animation
+
+    #     self.ids.main_ui.opacity = 0
+    #     exit_btn = self.children[0].children[0]
+    #     exit_btn.disabled = True
+    #     exit_btn.opacity = 0
+
+    #     congrats = Label(
+    #         text="[b]CONGRATULATIONS![/b]\nYou reached the required points!",
+    #         markup=True,
+    #         font_size='32sp',
+    #         color=(1, 1, 1, 1),
+    #         font_name=App.get_running_app().font_path,
+    #         halign='center',
+    #         valign='middle',
+    #         size_hint=(1, 1)
+    #     )
+    #     self.add_widget(congrats)
+    #     anim = Animation(opacity=1, duration=1.0)
+    #     anim.start(congrats)
+
+        # Clock.schedule_once(lambda dt: self._final_exit(), 4.0)
+
+    def _final_exit(self):
+        if self._original_size:
+            Window.size = self._original_size
+        if self.manager:
+            self.manager.current = "start_page"
+    # ----------------------------
+    # MUSIC CONTROL
+    # ----------------------------
     def start_music(self, dt=None):
-        """Load and play background music with looping and volume."""
         if hasattr(self.app, 'HEY_YA'):
             try:
                 pygame.mixer.music.load(self.app.TUCA_DONKA)
-                pygame.mixer.music.set_volume(1)  # 0.0 to 1.0
-                pygame.mixer.music.play(-1)  # loop indefinitely
+                pygame.mixer.music.set_volume(1)
+                pygame.mixer.music.play(-1)
             except Exception as e:
                 print("Failed to play music:", e)
 
-    def on_enter(self):
-        """Play music when entering this screen."""
-
-        if not hasattr(self, "ui_built"):
-            ui = MainUI()      # Load your roulette UI
-            self.add_widget(ui)
-            self.ui_built = True
-
-        Clock.schedule_once(self.start_music, 2)  # optional delay
-
     def on_leave(self):
-        """Stop music when leaving screen."""
         pygame.mixer.music.stop()
+
+
+
+        

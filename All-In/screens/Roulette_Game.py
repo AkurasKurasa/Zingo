@@ -6,20 +6,11 @@ from functools import partial
 import kivy
 kivy.require("2.1.0")
 
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.gridlayout import GridLayout
-from kivy.uix.scrollview import ScrollView
-from kivy.uix.label import Label
-from kivy.uix.textinput import TextInput
-from kivy.uix.button import Button
-from kivy.graphics import Color, Rectangle
-from kivy.uix.widget import Widget
-
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.core.text import LabelBase
 from kivy.graphics.texture import Texture
-from kivy.lang import Builder  # ← ADD THIS
+from kivy.lang import Builder  
 from kivy.properties import (NumericProperty, StringProperty, ListProperty,
                              ObjectProperty, BooleanProperty)
 from kivy.uix.boxlayout import BoxLayout
@@ -50,12 +41,8 @@ except Exception as e:
     LabelBase.register(name=PIXEL_FONT_NAME, fn_regular=None)
     PIL_FONT = ImageFont.load_default()
 
-app = App.get_running_app()
-
-print(app)
-
 # --- CONSTANTS ---
-STARTING_BALANCE = 0
+STARTING_BALANCE = 500
 BET_DEFAULT = 50
 NUMBERS = list(range(1, 13))
 SEG_COUNT = len(NUMBERS)
@@ -378,10 +365,6 @@ class MainUI(BoxLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         # Wait for KV to build ids
-        self.app = App.get_running_app()
-
-        self.balance = self.app.POINTS
-
         Clock.schedule_once(self._post_init, 0)
 
     def _post_init(self, dt):

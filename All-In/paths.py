@@ -6,8 +6,10 @@ BASE_DIR = os.path.dirname(__file__)
 
 # --- Resource paths ---
 HOME_BG_PATH = os.path.join(BASE_DIR, "backgrounds", "Start_Page_Final_BG.jpg")
-GAME_BG_PATH = os.path.join(BASE_DIR, "backgrounds", "gamepage_bg.jpg")
-CUSTOM_BG_PATH = os.path.join(BASE_DIR, "backgrounds", "custompage_bg.jpg")
+GAME_BG_PATH = os.path.join(BASE_DIR, "backgrounds", "Game_Page_Final_BG.jpg")
+CUSTOM_BG_PATH = os.path.join(BASE_DIR, "backgrounds", "Custom_Page_Final_BG.jpg")
+
+ALL_IN_LOGO = os.path.join(BASE_DIR, "backgrounds", "All-In_Logo.png")
 
 FONT_PATH = os.path.join(BASE_DIR, "fonts", "PixelifySans-Regular.ttf")
 QUESTIONS_CSV_PATH = os.path.join(BASE_DIR, "questions.csv")

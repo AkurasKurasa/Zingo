@@ -506,15 +506,18 @@ class CustomPage(Screen):
                 with open(self.app.QUESTIONS_JSON_PATH, 'w', encoding='utf-8') as f:
                     json.dump(data, f, indent=4, ensure_ascii=False)
 
+                # Update app state
                 self.app.QUESTIONS = data
+                if hasattr(self.app, '_shuffled_questions'):
+                    self.app._shuffled_questions = data.copy()
 
                 inner.remove_widget(container)
                 update_question_numbers()
 
+                self.app.load_questions()
+
             except Exception as e:
                 print("JSON error:", e)
-
-            self.app.load_questions()
 
         # --- Populate questions ---
         for idx, q in enumerate(questions):
@@ -599,7 +602,7 @@ class CustomPage(Screen):
         popup.open()
 
     def files_chosen(self, filepaths):
-
+        
         self.uploadStatusLabel.text = "Selected files:\n" + "\n".join(filepaths)
 
         if not filepaths:

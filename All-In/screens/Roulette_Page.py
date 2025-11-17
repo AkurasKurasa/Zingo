@@ -135,5 +135,3 @@ class RoulettePage(Screen):
 
         pygame.mixer.music.stop()
         self.manager.current = "game_page"
-
-        
